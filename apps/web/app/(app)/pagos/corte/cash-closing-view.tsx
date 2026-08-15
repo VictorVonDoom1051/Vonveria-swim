@@ -198,7 +198,8 @@ export function CashClosingView({
             <p className="text-sm text-text-secondary">No hay movimientos pendientes de corte.</p>
           ) : (
             <div className="flex flex-col gap-1">
-              {openSummary.sales.length > 0 ? (
+              {/* El encabezado solo tiene sentido si hay algo de ambos origenes. */}
+              {openSummary.sales.length > 0 && openSummary.payments.length > 0 ? (
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
                   Colegiaturas
                 </p>
