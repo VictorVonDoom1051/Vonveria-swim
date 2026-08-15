@@ -168,30 +168,32 @@ async function seedInstructorWithTodayClasses(
     create: { userId: instructor.id, roleId: instructorRoleId },
   });
 
-  // Obtener o crear programa, nivel, sucursal, alberca
-  const program = await prisma.program.findFirst({
-    where: { organizationId },
+  // Catalogo minimo para poder colgar el grupo. Se crea aqui en vez de solo
+  // buscarlo: en un despliegue nuevo la base esta vacia y antes el seed se
+  // rendia en silencio, dejando a la instructora sin grupo ni alumnos.
+  const program = await prisma.program.upsert({
+    where: { organizationId_name: { organizationId, name: "Natacion Infantil" } },
+    update: {},
+    create: { organizationId, name: "Natacion Infantil" },
   });
 
-  if (!program) return;
-
-  const level = await prisma.level.findFirst({
-    where: { program: { organizationId } },
+  const level = await prisma.level.upsert({
+    where: { programId_name: { programId: program.id, name: "Nivel 1" } },
+    update: {},
+    create: { programId: program.id, name: "Nivel 1", sortOrder: 1 },
   });
 
-  if (!level) return;
-
-  const branch = await prisma.branch.findFirst({
-    where: { organizationId },
+  const branch = await prisma.branch.upsert({
+    where: { organizationId_name: { organizationId, name: "Sucursal Principal" } },
+    update: {},
+    create: { organizationId, name: "Sucursal Principal" },
   });
 
-  if (!branch) return;
-
-  const pool = await prisma.pool.findFirst({
-    where: { branch: { organizationId } },
+  const pool = await prisma.pool.upsert({
+    where: { branchId_name: { branchId: branch.id, name: "Alberca Principal" } },
+    update: {},
+    create: { branchId: branch.id, name: "Alberca Principal" },
   });
-
-  if (!pool) return;
 
   // Crear grupo para la maestra
   const group = await prisma.group.upsert({
