@@ -15,11 +15,22 @@
 - **Role:** Dirección (Director)
 - **Access:** All modules, settings, reports, billing, instructor management
 
+#### Recepción — Daily Operations
+- **Email:** `recepcion@vonveria.mx`
+- **Password:** `12345678acs`
+- **Role:** Recepción
+- **Access:** Students and families, enrollments and group changes, charges and
+  payments, attendance marking, read-only view of classes and reports
+- **Cannot:** Manage users or permissions, edit branding, view the audit log,
+  manage facilities or programs, apply adjustments or refunds (`billing:adjust`
+  is Dirección only)
+
 #### Instructor — Class View Only
 - **Email:** `instructor@vonveria.mx`
 - **Password:** `12345678acs`
 - **Role:** Instructor (Maestra Andrea)
-- **Access:** View today's classes, student roster, record attendance
+- **Access:** View today's classes and student roster
+- **Cannot:** Mark attendance (needs `billing:manage`), see any billing data
 
 ---
 

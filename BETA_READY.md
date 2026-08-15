@@ -65,6 +65,10 @@ Dirección (Full Admin):
   Email: sistemas@vonveria.mx
   Password: 12345678acs
 
+Recepción (Daily Operations):
+  Email: recepcion@vonveria.mx
+  Password: 12345678acs
+
 Instructor (Read-Only):
   Email: instructor@vonveria.mx
   Password: 12345678acs

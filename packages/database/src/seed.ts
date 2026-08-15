@@ -144,6 +144,34 @@ async function seedAdminUser(
   });
 }
 
+async function seedReceptionUser(
+  prisma: PrismaClient,
+  organizationId: string,
+  recepcionRoleId: string,
+): Promise<void> {
+  // Usuario de la escuela piloto simulada, no un secreto real. Sus capacidades
+  // salen de ROLE_DEFINITIONS: registra alumnos, inscripciones y cobros, pero no
+  // administra permisos ni aplica ajustes o devoluciones.
+  const passwordHash = await hashPassword(process.env.RECEPTION_PASSWORD ?? "12345678acs");
+
+  const user = await prisma.user.upsert({
+    where: { organizationId_email: { organizationId, email: "recepcion@vonveria.mx" } },
+    update: { passwordHash },
+    create: {
+      organizationId,
+      email: "recepcion@vonveria.mx",
+      passwordHash,
+      fullName: "Recepcion Piloto",
+    },
+  });
+
+  await prisma.userRole.upsert({
+    where: { userId_roleId: { userId: user.id, roleId: recepcionRoleId } },
+    update: {},
+    create: { userId: user.id, roleId: recepcionRoleId },
+  });
+}
+
 async function seedInstructorWithTodayClasses(
   prisma: PrismaClient,
   organizationId: string,
@@ -316,12 +344,14 @@ async function main(): Promise<void> {
   await seedPermissionCatalog(prisma);
   const roleIdsByKey = await seedRoles(prisma, organization.id);
   await seedAdminUser(prisma, organization.id, roleIdsByKey[RoleKey.DIRECCION]);
+  await seedReceptionUser(prisma, organization.id, roleIdsByKey[RoleKey.RECEPCION]);
   await seedInstructorWithTodayClasses(prisma, organization.id, roleIdsByKey[RoleKey.INSTRUCTOR]);
 
   console.log("Seed de packages/database completado.");
   console.log(`Organizacion piloto: ${organization.name} (${organization.id})`);
   console.log("\n📚 Usuarios creados:");
   console.log("  - Admin (Dirección): sistemas@vonveria.mx / 12345678acs");
+  console.log("  - Recepción: recepcion@vonveria.mx / 12345678acs");
   console.log("  - Instructor: instructor@vonveria.mx / 12345678acs");
 }
 
