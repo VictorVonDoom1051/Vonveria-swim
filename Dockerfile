@@ -1,29 +1,46 @@
-FROM node:24-alpine
+# syntax=docker/dockerfile:1
+
+# Imagen unica para los tres servicios del monorepo (web, api, worker).
+# Se usa Debian slim y no Alpine porque los engines de Prisma dependen de
+# glibc/openssl: sobre musl fallan con "failed to detect the libssl version".
+FROM node:24-bookworm-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g pnpm@11.20.0
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@11.20.0
-
-# Copy workspace files
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc* ./
+# tsconfig.base.json es obligatorio: cada tsconfig de app/paquete lo extiende
+# y next build falla con TS5083 si no esta presente en la raiz del contenedor.
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages ./packages
 COPY apps ./apps
 
-# Install dependencies
-RUN pnpm install
+RUN pnpm install --no-frozen-lockfile
 
-# Build
-RUN pnpm build
+# El postinstall de @prisma/client no encuentra el schema dentro de un
+# workspace pnpm, asi que el cliente se genera de forma explicita.
+RUN pnpm --filter @vonveria-swim/database exec prisma generate
 
-# Expose ports
+# Next.js incrusta las variables NEXT_PUBLIC_* en tiempo de compilacion,
+# por eso la URL de la API tiene que llegar como build arg y no solo en runtime.
+ARG SERVICE=web
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# api y worker se ejecutan con tsx y no requieren paso de compilacion.
+RUN case "$SERVICE" in \
+      api|worker) echo "Sin paso de build para $SERVICE" ;; \
+      *) pnpm --filter @vonveria-swim/web build ;; \
+    esac
+
+ENV NODE_ENV=production
+ENV TZ=America/Mexico_City
+
 EXPOSE 3001 3100
 
-# Start apps based on SERVICE env var
-CMD if [ "$SERVICE" = "web" ]; then \
-      pnpm --filter @vonveria-swim/web start; \
-    elif [ "$SERVICE" = "api" ]; then \
-      pnpm --filter @vonveria-swim/api start:prod; \
-    else \
-      pnpm --filter @vonveria-swim/worker start; \
-    fi
+# Railway define el comando de arranque real por servicio; esto es el respaldo.
+CMD ["pnpm", "--filter", "@vonveria-swim/web", "start"]
