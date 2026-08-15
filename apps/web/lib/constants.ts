@@ -10,5 +10,9 @@ export const CSRF_COOKIE_NAME = "vonveria_csrf";
  */
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-/** Base para las llamadas desde el servidor de Next, que siempre necesita URL absoluta. */
-export const API_SERVER_URL = process.env.API_SERVER_URL ?? API_URL;
+/**
+ * Base para las llamadas desde el servidor de Next y para el proxy de
+ * app/api/[...path]. Siempre tiene que ser absoluta, por eso no cae a API_URL:
+ * en produccion esa es relativa.
+ */
+export const API_SERVER_URL = process.env.API_SERVER_URL ?? "http://localhost:3001";

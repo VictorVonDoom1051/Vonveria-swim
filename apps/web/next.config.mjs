@@ -1,15 +1,11 @@
 /** @type {import('next').NextConfig} */
 
-// Destino del proxy /api. Permite que el navegador hable con un solo origen
-// aunque apps/api este desplegada en otro dominio.
-const apiProxyTarget = process.env.API_SERVER_URL ?? "http://localhost:3001";
-
+// El proxy hacia apps/api vive en app/api/[...path]/route.ts y no aqui: los
+// rewrites de next.config se compilan dentro del build, y la URL de la api solo
+// se conoce en runtime.
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@vonveria-swim/ui"],
-  async rewrites() {
-    return [{ source: "/api/:path*", destination: `${apiProxyTarget}/:path*` }];
-  },
 };
 
 export default nextConfig;
