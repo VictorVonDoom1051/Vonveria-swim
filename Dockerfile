@@ -11,7 +11,7 @@ COPY packages ./packages
 COPY apps ./apps
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build
 RUN pnpm build
