@@ -2,6 +2,24 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo. El formato sigue [Keep a Changelog](https://keepachangelog.com/) y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [0.5.0] - 2026-08-15
+
+### Agregado
+
+- **M7 — Productos, inventario y venta de mostrador.** Modulo fuera de M0–M6, aprobado explicitamente (ver `docs/decisions/0002-productos-inventario-y-venta-de-mostrador.md`).
+  - Modelos `Product`, `StockMovement`, `Sale` y `SaleLine`, con enums `ProductCategory` y `StockMovementReason`. Migracion aditiva: ningun modelo existente cambia.
+  - Las existencias se calculan sumando movimientos; no hay campo `stock` editable.
+  - `SaleLine.unitPrice` congela el precio al momento de vender.
+  - `SalesService.createSale` valida existencias con las filas de producto bloqueadas (`SELECT ... FOR UPDATE`), ordenadas por id para evitar interbloqueos entre carritos.
+  - Capacidades nuevas: `sales:manage` (Direccion y Recepcion) e `inventory:manage` (solo Direccion).
+  - `/tienda`: cobro de mostrador con carrito, metodo de pago y bloqueo de productos agotados.
+  - `/tienda/inventario`: alta de productos, entradas y ajustes con motivo obligatorio.
+  - Seed con cuatro productos demo y sus existencias iniciales.
+
+### Cambiado
+
+- **El corte de caja incluye las ventas de mostrador.** `getOpenSummary`, `closeCash` y `getClosingDetail` suman pagos y ventas en un solo total por metodo, con desglose por origen. Un dia de solo ventas de productos ya se puede cerrar; antes fallaba con `CASH_CLOSING_NO_OPEN_PAYMENTS`.
+
 ## [0.4.0] - 2026-08-15
 
 ### Agregado

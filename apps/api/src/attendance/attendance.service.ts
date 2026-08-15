@@ -1,11 +1,11 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { AuditService } from '../audit/audit.service';
+import { Injectable, Inject } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { AuditService } from "../audit/audit.service";
 
 export interface SessionAttendance {
   sessionId: string;
   studentId: string;
-  status: 'PRESENT' | 'ABSENT_JUSTIFIED';
+  status: "PRESENT" | "ABSENT_JUSTIFIED";
   notes?: string | null;
   actorUserId?: string | null;
   updatedAt: Date;
@@ -30,12 +30,12 @@ export class AttendanceService {
       create: {
         sessionId,
         studentId,
-        status: 'ABSENT_JUSTIFIED',
+        status: "ABSENT_JUSTIFIED",
         notes: notes || null,
         actorUserId,
       },
       update: {
-        status: 'ABSENT_JUSTIFIED',
+        status: "ABSENT_JUSTIFIED",
         notes: notes || null,
         actorUserId,
       },
@@ -44,10 +44,10 @@ export class AttendanceService {
     await this.audit.record({
       organizationId,
       actorUserId,
-      action: 'attendance:mark_absent',
-      entityType: 'Attendance',
+      action: "attendance:mark_absent",
+      entityType: "Attendance",
       entityId: sessionId,
-      metadata: { studentId, status: 'ABSENT_JUSTIFIED', notes },
+      metadata: { studentId, status: "ABSENT_JUSTIFIED", notes },
     });
 
     return {
@@ -71,11 +71,11 @@ export class AttendanceService {
       create: {
         sessionId,
         studentId,
-        status: 'PRESENT',
+        status: "PRESENT",
         actorUserId,
       },
       update: {
-        status: 'PRESENT',
+        status: "PRESENT",
         actorUserId,
       },
     });
@@ -83,10 +83,10 @@ export class AttendanceService {
     await this.audit.record({
       organizationId,
       actorUserId,
-      action: 'attendance:mark_present',
-      entityType: 'Attendance',
+      action: "attendance:mark_present",
+      entityType: "Attendance",
       entityId: sessionId,
-      metadata: { studentId, status: 'PRESENT' },
+      metadata: { studentId, status: "PRESENT" },
     });
 
     return {
@@ -102,7 +102,7 @@ export class AttendanceService {
   async getSessionAttendance(sessionId: string): Promise<SessionAttendance[]> {
     const records = await this.prisma.client.attendance.findMany({
       where: { sessionId },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
     });
 
     return records.map((r) => ({
@@ -115,7 +115,10 @@ export class AttendanceService {
     }));
   }
 
-  async getSessionAttendanceForStudents(sessionId: string, studentIds: string[]): Promise<Map<string, SessionAttendance>> {
+  async getSessionAttendanceForStudents(
+    sessionId: string,
+    studentIds: string[],
+  ): Promise<Map<string, SessionAttendance>> {
     const records = await this.prisma.client.attendance.findMany({
       where: { sessionId, studentId: { in: studentIds } },
     });

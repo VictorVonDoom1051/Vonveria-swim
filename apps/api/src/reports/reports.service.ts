@@ -45,7 +45,10 @@ export class ReportsService {
     );
 
     const activePackages = packageCredits.filter((credit) => {
-      const remaining = credit.movements.reduce((sum, movement) => sum + movement.delta, credit.totalUnits);
+      const remaining = credit.movements.reduce(
+        (sum, movement) => sum + movement.delta,
+        credit.totalUnits,
+      );
       return remaining > 0;
     }).length;
 

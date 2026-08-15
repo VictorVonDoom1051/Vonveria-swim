@@ -8,9 +8,17 @@ const UNIQUE_CONSTRAINT_VIOLATION = "P2002";
  * Idempotente: la restriccion unica [enrollmentId, periodYear, periodMonth] en
  * `charges` evita duplicados aunque el job corra dos veces o en paralelo.
  */
-export async function runMonthlyFeeGeneration(prisma: PrismaClient, referenceDate: Date): Promise<number> {
+export async function runMonthlyFeeGeneration(
+  prisma: PrismaClient,
+  referenceDate: Date,
+): Promise<number> {
   const enrollments = await prisma.enrollment.findMany({
-    where: { status: "ACTIVE", billingModality: "MONTHLY", monthlyRateAmount: { not: null }, monthlyDueDay: { not: null } },
+    where: {
+      status: "ACTIVE",
+      billingModality: "MONTHLY",
+      monthlyRateAmount: { not: null },
+      monthlyDueDay: { not: null },
+    },
   });
 
   let createdCount = 0;
@@ -37,7 +45,9 @@ export async function runMonthlyFeeGeneration(prisma: PrismaClient, referenceDat
       });
       createdCount += 1;
     } catch (error: unknown) {
-      const isDuplicate = error instanceof Prisma.PrismaClientKnownRequestError && error.code === UNIQUE_CONSTRAINT_VIOLATION;
+      const isDuplicate =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === UNIQUE_CONSTRAINT_VIOLATION;
       if (!isDuplicate) {
         throw error;
       }

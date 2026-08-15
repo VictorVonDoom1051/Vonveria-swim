@@ -6,7 +6,9 @@ import { apiFetch } from "../../../lib/api-client";
 import type { BillingSummary } from "./types";
 
 function formatMoney(amount: string): string {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(amount));
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
+    Number(amount),
+  );
 }
 
 function toDateInputValue(iso: string): string {
@@ -67,7 +69,9 @@ export function ReportsView({ initial }: { initial: BillingSummary | null }) {
         <div className="flex flex-wrap gap-4">
           <Card className="min-w-[220px]">
             <p className="text-sm text-text-secondary">Adeudo total</p>
-            <p className="text-2xl font-semibold text-status-debt">{formatMoney(summary.totalDebt)}</p>
+            <p className="text-2xl font-semibold text-status-debt">
+              {formatMoney(summary.totalDebt)}
+            </p>
           </Card>
           <Card className="min-w-[220px]">
             <p className="text-sm text-text-secondary">Cobrado en el periodo</p>

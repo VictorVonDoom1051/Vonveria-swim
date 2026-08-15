@@ -24,7 +24,9 @@ function isOverdue(charge: ChargeItem): boolean {
 }
 
 function formatMoney(amount: string): string {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(amount));
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
+    Number(amount),
+  );
 }
 
 export function PagosOverview({ initial }: { initial: ChargeItem[] }) {
@@ -48,7 +50,9 @@ export function PagosOverview({ initial }: { initial: ChargeItem[] }) {
       <div className="flex flex-wrap gap-4">
         <Card className="min-w-[220px]">
           <p className="text-sm text-text-secondary">Adeudo total</p>
-          <p className="text-2xl font-semibold text-status-debt">{formatMoney(String(totalDebt))}</p>
+          <p className="text-2xl font-semibold text-status-debt">
+            {formatMoney(String(totalDebt))}
+          </p>
         </Card>
         <Card className="min-w-[220px]">
           <p className="text-sm text-text-secondary">Cargos vencidos</p>
@@ -73,7 +77,9 @@ export function PagosOverview({ initial }: { initial: ChargeItem[] }) {
                   </p>
                   <p className="text-text-secondary">
                     Saldo {formatMoney(charge.balance)}
-                    {charge.dueDate ? ` · Vence ${new Date(charge.dueDate).toLocaleDateString("es-MX")}` : ""}
+                    {charge.dueDate
+                      ? ` · Vence ${new Date(charge.dueDate).toLocaleDateString("es-MX")}`
+                      : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

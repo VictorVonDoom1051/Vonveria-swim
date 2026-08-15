@@ -51,11 +51,19 @@ describe("SchedulingService.createGroup", () => {
     });
     instructorId = instructor.id;
 
-    const branch = await prisma.client.branch.create({ data: { organizationId, name: "Sucursal" } });
-    const pool = await prisma.client.pool.create({ data: { branchId: branch.id, name: "Alberca" } });
+    const branch = await prisma.client.branch.create({
+      data: { organizationId, name: "Sucursal" },
+    });
+    const pool = await prisma.client.pool.create({
+      data: { branchId: branch.id, name: "Alberca" },
+    });
     const lane = await prisma.client.lane.create({ data: { poolId: pool.id, name: "1" } });
-    const program = await prisma.client.program.create({ data: { organizationId, name: "Programa" } });
-    const level = await prisma.client.level.create({ data: { programId: program.id, name: "Nivel" } });
+    const program = await prisma.client.program.create({
+      data: { organizationId, name: "Programa" },
+    });
+    const level = await prisma.client.level.create({
+      data: { programId: program.id, name: "Nivel" },
+    });
 
     branchId = branch.id;
     poolId = pool.id;

@@ -1,4 +1,13 @@
-import { IsDateString, IsDecimal, IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
+import {
+  IsDateString,
+  IsDecimal,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 import { ChargeType } from "@vonveria-swim/database";
 
 /** Solo para cargos manuales (clase individual u otro concepto configurable). */

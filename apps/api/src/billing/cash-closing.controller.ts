@@ -7,7 +7,9 @@ import type { AuthenticatedUser } from "../identity/types";
 
 @Controller("billing/cash-closings")
 export class CashClosingController {
-  constructor(@Inject(CashClosingService) private readonly cashClosingService: CashClosingService) {}
+  constructor(
+    @Inject(CashClosingService) private readonly cashClosingService: CashClosingService,
+  ) {}
 
   @RequireCapability(CAPABILITIES.BILLING_MANAGE)
   @Get()

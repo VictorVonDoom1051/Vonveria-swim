@@ -3,6 +3,16 @@ import { requireCapability, serverFetch } from "../../../../lib/session";
 import { CashClosingView } from "./cash-closing-view";
 import type { CashClosingItem, CashClosingOpenSummary } from "../types";
 
+const EMPTY_TOTALS = { CASH: "0", TRANSFER: "0", CARD: "0", OTHER: "0" };
+
+const EMPTY_SUMMARY: CashClosingOpenSummary = {
+  totals: EMPTY_TOTALS,
+  paymentTotals: EMPTY_TOTALS,
+  saleTotals: EMPTY_TOTALS,
+  payments: [],
+  sales: [],
+};
+
 export default async function CashClosingPage() {
   await requireCapability(CAPABILITIES.BILLING_MANAGE);
   const [closings, openSummary] = await Promise.all([
@@ -13,7 +23,7 @@ export default async function CashClosingPage() {
   return (
     <CashClosingView
       initialClosings={closings ?? []}
-      initialOpenSummary={openSummary ?? { totals: { CASH: "0", TRANSFER: "0", CARD: "0", OTHER: "0" }, payments: [] }}
+      initialOpenSummary={openSummary ?? EMPTY_SUMMARY}
     />
   );
 }

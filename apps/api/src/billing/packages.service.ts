@@ -81,7 +81,14 @@ export class PackagesService {
     packageCreditId: string,
     dto: ConsumePackageDto,
   ) {
-    return this.applyMovement(organizationId, actorUserId, packageCreditId, -1, dto.sessionId, dto.reason ?? "Consumo manual");
+    return this.applyMovement(
+      organizationId,
+      actorUserId,
+      packageCreditId,
+      -1,
+      dto.sessionId,
+      dto.reason ?? "Consumo manual",
+    );
   }
 
   async returnUnit(
@@ -90,7 +97,14 @@ export class PackagesService {
     packageCreditId: string,
     dto: ConsumePackageDto,
   ) {
-    return this.applyMovement(organizationId, actorUserId, packageCreditId, 1, dto.sessionId, dto.reason ?? "Devolucion manual");
+    return this.applyMovement(
+      organizationId,
+      actorUserId,
+      packageCreditId,
+      1,
+      dto.sessionId,
+      dto.reason ?? "Devolucion manual",
+    );
   }
 
   private async applyMovement(

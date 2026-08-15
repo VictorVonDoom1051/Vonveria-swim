@@ -1,4 +1,13 @@
-import { IsDecimal, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from "class-validator";
+import {
+  IsDecimal,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+} from "class-validator";
 
 export class SellPackageDto {
   @IsUUID()

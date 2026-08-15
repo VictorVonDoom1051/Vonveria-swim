@@ -17,6 +17,18 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export const MORE_NAV: NavItem[] = [
+  // La Seccion 5 fija seis secciones principales, asi que Tienda vive aqui
+  // aunque sea una tarea frecuente. Promoverla exige actualizar esa seccion.
+  {
+    label: "Tienda",
+    href: "/tienda",
+    requiresAnyCapability: [CAPABILITIES.SALES_MANAGE],
+  },
+  {
+    label: "Inventario",
+    href: "/tienda/inventario",
+    requiresAnyCapability: [CAPABILITIES.INVENTORY_MANAGE],
+  },
   { label: "Instructores", href: "/instructores" },
   { label: "Evaluaciones", href: "/evaluaciones" },
   { label: "Reportes", href: "/reportes" },

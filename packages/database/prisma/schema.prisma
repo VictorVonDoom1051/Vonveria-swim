@@ -59,6 +59,9 @@ model Organization {
   packageCredits PackageCredit[]
   cashClosings   CashClosing[]
 
+  products Product[]
+  sales    Sale[]
+
   @@map("organizations")
 }
 
@@ -645,6 +648,7 @@ model CashClosing {
   createdAt      DateTime     @default(now()) @map("created_at")
 
   payments Payment[]
+  sales    Sale[]
 
   @@map("cash_closings")
 }
@@ -672,4 +676,98 @@ model Attendance {
   @@unique([sessionId, studentId])
   @@index([sessionId])
   @@map("attendances")
+}
+
+// ---------------------------------------------------------------------------
+// M7 - Productos, inventario y venta de mostrador.
+//
+// Las ventas NO pasan por Charge/Payment: son de mostrador y se pagan en el
+// momento, sin ligarse a un alumno. Entran al corte de caja junto con los pagos
+// para que el total refleje el dinero fisico del cajon (ADR de M7).
+// ---------------------------------------------------------------------------
+
+enum ProductCategory {
+  EQUIPMENT
+  CONSUMABLE
+}
+
+enum StockMovementReason {
+  PURCHASE
+  SALE
+  ADJUSTMENT
+  RETURN
+}
+
+model Product {
+  id             String          @id @default(uuid())
+  organizationId String          @map("organization_id")
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  name           String
+  category       ProductCategory @default(EQUIPMENT)
+  unitPrice      Decimal         @db.Decimal(10, 2) @map("unit_price")
+  currency       String          @default("MXN")
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  stockMovements StockMovement[]
+  saleLines      SaleLine[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isActive])
+  @@map("products")
+}
+
+/// Las existencias nunca se guardan como campo editable: se calculan sumando
+/// los delta de este modelo (Seccion 11 de CLAUDE.md).
+model StockMovement {
+  id          String              @id @default(uuid())
+  productId   String              @map("product_id")
+  product     Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  delta       Int
+  reason      StockMovementReason
+  saleId      String?             @map("sale_id")
+  sale        Sale?               @relation(fields: [saleId], references: [id])
+  notes       String?
+  actorUserId String?             @map("actor_user_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  @@index([productId])
+  @@map("stock_movements")
+}
+
+model Sale {
+  id             String        @id @default(uuid())
+  organizationId String        @map("organization_id")
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  total          Decimal       @db.Decimal(10, 2)
+  currency       String        @default("MXN")
+  method         PaymentMethod
+  soldAt         DateTime      @default(now()) @map("sold_at")
+  cashClosingId  String?       @map("cash_closing_id")
+  cashClosing    CashClosing?  @relation(fields: [cashClosingId], references: [id])
+  actorUserId    String?       @map("actor_user_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  lines          SaleLine[]
+  stockMovements StockMovement[]
+
+  @@index([organizationId, soldAt])
+  @@map("sales")
+}
+
+/// unitPrice es una foto del precio al momento de vender: cambiar el precio del
+/// producto no debe alterar el total de una venta pasada.
+model SaleLine {
+  id        String  @id @default(uuid())
+  saleId    String  @map("sale_id")
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2) @map("unit_price")
+  lineTotal Decimal @db.Decimal(10, 2) @map("line_total")
+
+  @@index([saleId])
+  @@map("sale_lines")
 }

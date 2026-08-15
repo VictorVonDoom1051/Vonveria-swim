@@ -10,12 +10,14 @@
 ### Credentials
 
 #### Admin (Dirección) — Full Access
+
 - **Email:** `sistemas@vonveria.mx`
 - **Password:** `12345678acs`
 - **Role:** Dirección (Director)
 - **Access:** All modules, settings, reports, billing, instructor management
 
 #### Recepción — Daily Operations
+
 - **Email:** `recepcion@vonveria.mx`
 - **Password:** `12345678acs`
 - **Role:** Recepción
@@ -26,6 +28,7 @@
   is Dirección only)
 
 #### Instructor — Class View Only
+
 - **Email:** `instructor@vonveria.mx`
 - **Password:** `12345678acs`
 - **Role:** Instructor (Maestra Andrea)
@@ -37,9 +40,11 @@
 ## Testing Flows
 
 ### 1. **Instructor Daily Class View** (`/hoy`)
+
 **Objective:** Verify instructor can see their assigned classes and students
 
 **Steps:**
+
 1. Login as `instructor@vonveria.mx` / `12345678acs`
 2. You should see "Hola, Maestra Andrea" greeting
 3. Class "Clase 9-10AM" should appear (next Monday 09:00-10:00)
@@ -51,9 +56,11 @@
 ---
 
 ### 2. **Admin Dashboard - Classes View** (`/clases`)
+
 **Objective:** Verify admin can see all classes, instructors, and group status
 
 **Steps:**
+
 1. Login as `sistemas@vonveria.mx` / `12345678acs`
 2. Navigate to **Clases** (in left sidebar)
 3. You should see a table with:
@@ -69,9 +76,11 @@
 ---
 
 ### 3. **Attendance Recording** (`/hoy` as Admin/Recepcion)
+
 **Objective:** Verify admin/recepcion can mark student absences with notes
 
 **Steps:**
+
 1. Login as admin (`sistemas@vonveria.mx` / `12345678acs`)
 2. Navigate to **Hoy** (or click class link from `/clases`)
 3. In the Asistencia section, click on a student icon (Juan García)
@@ -91,9 +100,11 @@
 ---
 
 ### 4. **Student Management** (`/alumnos`)
+
 **Objective:** Verify family and student creation, search, and enrollment
 
 **Steps:**
+
 1. Login as admin
 2. Navigate to **Alumnos**
 3. **Search:** Search for "García" - should find the demo students
@@ -108,9 +119,11 @@
 ---
 
 ### 5. **Billing Overview** (`/pagos`)
+
 **Objective:** Verify billing system shows charges and balances
 
 **Steps:**
+
 1. Login as admin
 2. Navigate to **Pagos**
 3. You should see:
@@ -130,9 +143,11 @@
 ---
 
 ### 6. **Organization Branding** (`/settings/organization`)
+
 **Objective:** Verify org configuration and dynamic branding
 
 **Steps:**
+
 1. Login as admin
 2. Navigate to **Configuración → Organización**
 3. You should see:
@@ -149,9 +164,11 @@
 ---
 
 ### 7. **User Management** (`/settings/users`)
+
 **Objective:** Verify admin can manage users and roles
 
 **Steps:**
+
 1. Login as admin
 2. Navigate to **Configuración → Usuarios**
 3. You should see:
@@ -164,9 +181,11 @@
 ---
 
 ### 8. **Audit Log** (`/settings/audit`)
+
 **Objective:** Verify audit trail of actions
 
 **Steps:**
+
 1. Login as admin
 2. Navigate to **Configuración → Auditoría**
 3. You should see log entries for:
@@ -183,6 +202,7 @@
 ## Key Features by Role
 
 ### Dirección (Admin)
+
 - ✅ View all students and families
 - ✅ Create and manage groups/classes
 - ✅ Assign instructors
@@ -195,12 +215,14 @@
 - ✅ Manage users and roles
 
 ### Instructor (Maestra Andrea)
+
 - ✅ View today's classes (next 7 days)
 - ✅ See assigned students
 - ✅ **Read-only:** Cannot record attendance (Recepción/Dirección only)
 - ✅ View navigation limited to: Hoy, Asistencia (placeholder), Evaluaciones (placeholder)
 
 ### Recepción (Not yet seeded, but supported)
+
 - ✅ Same billing/attendance/student capabilities as Dirección
 - ❌ Cannot adjust/refund/delete audit
 
@@ -209,6 +231,7 @@
 ## What's Implemented (Milestones)
 
 ### ✅ M1 - Organization, Access & Design
+
 - Organization configuration
 - User authentication & sessions
 - Role-based access control (RBAC)
@@ -217,6 +240,7 @@
 - Audit logging foundation
 
 ### ✅ M2 - Families, Students, Facilities & Classes
+
 - Family and student management
 - Facilities (branches, pools, lanes)
 - Programs and levels
@@ -225,6 +249,7 @@
 - Session generation from schedule rules
 
 ### ✅ M3 - Billing
+
 - Charge creation (enrollment fees, monthly, packages, single class)
 - Payment recording with auto-allocation
 - Adjustments and refunds (admin only)
@@ -234,6 +259,7 @@
 - Monthly fee auto-generation (worker job)
 
 ### ✅ M4 - Attendance (Simplified Scope)
+
 - **Simplified to absence notifications only** (no Hikvision integration, no biometric readers)
 - Manual attendance recording
 - Mark student as absent with optional notes
@@ -246,6 +272,7 @@
 ## Known Limitations & Next Steps
 
 ### Not Implemented Yet
+
 - ❌ M5: Skill assessments and level advancement
 - ❌ M6: Production deployment & compliance
 - ❌ Hikvision biometric integration (planned for future)
@@ -256,6 +283,7 @@
 - ❌ Public family portal
 
 ### Testing Notes
+
 - All data is **test/demo data** — safe to modify
 - Database resets when `pnpm db:seed` is run
 - No real payments processed (administrative record-keeping only)
@@ -266,12 +294,14 @@
 ## Troubleshooting
 
 ### Servers Not Starting
+
 ```bash
 cd C:\Users\siste\OneDrive\Desktop\VonverIA-Swim
 pnpm --parallel --filter "./apps/*" dev
 ```
 
 ### Database Issues
+
 ```bash
 pnpm db:reset    # Nukes and reseeds
 pnpm db:migrate  # Runs pending migrations
@@ -279,11 +309,13 @@ pnpm db:seed     # Populates demo data
 ```
 
 ### Port Conflicts
+
 - API: 3001
 - Web: 3100
 - Worker: background service
 
 Kill processes and retry:
+
 ```bash
 # Find and kill node processes on those ports
 netstat -ano | findstr ":3001 :3100"
@@ -295,6 +327,7 @@ taskkill /PID <PID> /F
 ## Contact & Feedback
 
 For issues or feedback during testing:
+
 - **Email:** sistemas@acstechnology.mx
 - **Internal Wiki:** [Your team's wiki]
 - **Issue Tracker:** [GitHub/Linear link]

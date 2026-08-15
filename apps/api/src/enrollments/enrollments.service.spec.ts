@@ -37,10 +37,18 @@ describe("EnrollmentsService.createEnrollment", () => {
     });
     actorUserId = actor.id;
 
-    const branch = await prisma.client.branch.create({ data: { organizationId, name: "Sucursal" } });
-    const pool = await prisma.client.pool.create({ data: { branchId: branch.id, name: "Alberca" } });
-    const program = await prisma.client.program.create({ data: { organizationId, name: "Programa" } });
-    const level = await prisma.client.level.create({ data: { programId: program.id, name: "Nivel" } });
+    const branch = await prisma.client.branch.create({
+      data: { organizationId, name: "Sucursal" },
+    });
+    const pool = await prisma.client.pool.create({
+      data: { branchId: branch.id, name: "Alberca" },
+    });
+    const program = await prisma.client.program.create({
+      data: { organizationId, name: "Programa" },
+    });
+    const level = await prisma.client.level.create({
+      data: { programId: program.id, name: "Nivel" },
+    });
 
     const group = await prisma.client.group.create({
       data: {
@@ -143,10 +151,18 @@ describe("EnrollmentsService.createEnrollment concurrencia", () => {
     });
     actorUserId = actor.id;
 
-    const branch = await prisma.client.branch.create({ data: { organizationId, name: "Sucursal" } });
-    const pool = await prisma.client.pool.create({ data: { branchId: branch.id, name: "Alberca" } });
-    const program = await prisma.client.program.create({ data: { organizationId, name: "Programa" } });
-    const level = await prisma.client.level.create({ data: { programId: program.id, name: "Nivel" } });
+    const branch = await prisma.client.branch.create({
+      data: { organizationId, name: "Sucursal" },
+    });
+    const pool = await prisma.client.pool.create({
+      data: { branchId: branch.id, name: "Alberca" },
+    });
+    const program = await prisma.client.program.create({
+      data: { organizationId, name: "Programa" },
+    });
+    const level = await prisma.client.level.create({
+      data: { programId: program.id, name: "Nivel" },
+    });
 
     const group = await prisma.client.group.create({
       data: {
@@ -210,7 +226,9 @@ describe("EnrollmentsService.createEnrollment concurrencia", () => {
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
 
-    const activeCount = await prisma.client.enrollment.count({ where: { groupId, status: "ACTIVE" } });
+    const activeCount = await prisma.client.enrollment.count({
+      where: { groupId, status: "ACTIVE" },
+    });
     expect(activeCount).toBe(1);
   });
 });

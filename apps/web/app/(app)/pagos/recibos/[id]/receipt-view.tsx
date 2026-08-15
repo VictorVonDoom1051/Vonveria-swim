@@ -11,7 +11,9 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 function formatMoney(amount: string): string {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(amount));
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
+    Number(amount),
+  );
 }
 
 export function ReceiptView({ receipt }: { receipt: ReceiptDetail }) {
@@ -37,7 +39,9 @@ export function ReceiptView({ receipt }: { receipt: ReceiptDetail }) {
 
         <div className="flex flex-col gap-1 py-3">
           <p className="text-sm text-text-secondary">Fecha</p>
-          <p className="text-text-primary">{new Date(receipt.receivedAt).toLocaleString("es-MX")}</p>
+          <p className="text-text-primary">
+            {new Date(receipt.receivedAt).toLocaleString("es-MX")}
+          </p>
         </div>
 
         <div className="flex flex-col gap-1 py-3">

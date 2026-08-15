@@ -10,12 +10,12 @@
 
 ### ✅ Core Milestones Complete
 
-| Milestone | Status | Scope |
-|-----------|--------|-------|
-| **M1** | ✅ Complete | Organization, Authentication, RBAC, Audit |
-| **M2** | ✅ Complete | Families, Students, Facilities, Classes, Scheduling, Enrollment |
-| **M3** | ✅ Complete | Charges, Payments, Adjustments, Refunds, Packages, Cash Closing |
-| **M4** | ✅ Complete | Attendance (simplified - absence notifications only) |
+| Milestone | Status      | Scope                                                           |
+| --------- | ----------- | --------------------------------------------------------------- |
+| **M1**    | ✅ Complete | Organization, Authentication, RBAC, Audit                       |
+| **M2**    | ✅ Complete | Families, Students, Facilities, Classes, Scheduling, Enrollment |
+| **M3**    | ✅ Complete | Charges, Payments, Adjustments, Refunds, Packages, Cash Closing |
+| **M4**    | ✅ Complete | Attendance (simplified - absence notifications only)            |
 
 ### ✅ Key Features Verified
 
@@ -54,6 +54,7 @@ pnpm --parallel --filter "./apps/*" dev
 ```
 
 **Services:**
+
 - Web: http://localhost:3100
 - API: http://localhost:3001
 - Database: localhost:5432
@@ -77,6 +78,7 @@ Instructor (Read-Only):
 ### 4. Test Scenarios
 
 See [TESTING_BETA.md](./TESTING_BETA.md) for complete test flows covering:
+
 - Instructor class view (`/hoy`)
 - Admin dashboard (`/clases`)
 - Attendance recording
@@ -90,11 +92,13 @@ See [TESTING_BETA.md](./TESTING_BETA.md) for complete test flows covering:
 ## Code Quality
 
 ✅ **All Systems Passing:**
+
 - TypeScript strict mode: 0 errors
 - Linter (ESLint): Clean
 - Build: ✅ Successful
 
 **Run checks locally:**
+
 ```bash
 pnpm typecheck    # TypeScript
 pnpm lint         # ESLint
@@ -106,6 +110,7 @@ pnpm build        # Production build
 ## Architecture Overview
 
 ### Tech Stack
+
 - **Frontend:** Next.js 14 + React + Tailwind CSS
 - **Backend:** NestJS + PostgreSQL + Prisma
 - **Database:** PostgreSQL (Docker)
@@ -114,6 +119,7 @@ pnpm build        # Production build
 - **Testing:** Vitest (unit/integration)
 
 ### Directory Structure
+
 ```
 VonverIA-Swim/
 ├── apps/
@@ -143,6 +149,7 @@ VonverIA-Swim/
 ## Known Limitations
 
 ❌ **Not in Beta:**
+
 - Hikvision biometric readers (M6)
 - Email/SMS notifications
 - WhatsApp integration
@@ -158,11 +165,13 @@ These are planned for later versions based on school feedback.
 ## Next Steps After Beta
 
 ### Immediate (M5)
+
 - [ ] Skill assessments & level advancement system
 - [ ] Enhanced reporting (occupancy, revenue, trends)
 - [ ] Improved admin dashboard with KPIs
 
 ### Before Production (M6)
+
 - [ ] Production deployment template (Railway)
 - [ ] Multi-school configuration
 - [ ] Staging environment
@@ -172,6 +181,7 @@ These are planned for later versions based on school feedback.
 - [ ] Documentation & operator manual
 
 ### Future (After M6)
+
 - [ ] Hikvision ISAPI integration
 - [ ] Email notifications (Python + SendGrid)
 - [ ] WhatsApp notifications (Twilio)
@@ -203,12 +213,14 @@ When ready to move from beta to production:
 **Internal Testing Contact:** sistemas@acstechnology.mx
 
 **Found a bug?**
+
 1. Document exact steps to reproduce
 2. Note which role (Dirección/Instructor) and what data
 3. Include browser console errors (F12)
 4. Email to internal contact
 
 **Feature suggestion?**
+
 - Assess against CLAUDE.md principles (Section 3: "Completo sin ser complicado")
 - If approved, create RFC or ADR in `docs/decisions/`
 - Schedule for appropriate milestone (M5+)

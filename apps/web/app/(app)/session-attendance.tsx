@@ -181,8 +181,7 @@ export function SessionAttendance({
               }}
               className="rounded-md bg-status-error px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
-              {selectedStudentId &&
-              attendance[selectedStudentId]?.status === "ABSENT_JUSTIFIED"
+              {selectedStudentId && attendance[selectedStudentId]?.status === "ABSENT_JUSTIFIED"
                 ? "Revertir"
                 : "Marcar ausente"}
             </button>

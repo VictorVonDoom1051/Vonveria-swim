@@ -89,7 +89,10 @@ describe("runMonthlyFeeGeneration", () => {
     const created = await runMonthlyFeeGeneration(prisma, new Date(Date.UTC(2026, 9, 1)));
     expect(created).toBe(1);
 
-    const charges = await prisma.charge.findMany({ where: { enrollmentId }, orderBy: { periodMonth: "asc" } });
+    const charges = await prisma.charge.findMany({
+      where: { enrollmentId },
+      orderBy: { periodMonth: "asc" },
+    });
     expect(charges).toHaveLength(2);
     expect(charges[1]?.periodMonth).toBe(10);
   });

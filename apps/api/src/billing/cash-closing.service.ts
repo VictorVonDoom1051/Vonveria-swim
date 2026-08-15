@@ -10,7 +10,9 @@ export interface MethodTotals {
   OTHER: Prisma.Decimal;
 }
 
-function sumByMethod(payments: readonly { method: keyof MethodTotals; amount: Prisma.Decimal }[]): MethodTotals {
+function sumByMethod(
+  payments: readonly { method: keyof MethodTotals; amount: Prisma.Decimal }[],
+): MethodTotals {
   return payments.reduce<MethodTotals>(
     (acc, payment) => {
       acc[payment.method] = acc[payment.method].plus(payment.amount);
@@ -46,17 +48,38 @@ export class CashClosingService {
    * lo cobrado, no solo lo ya cerrado).
    */
   async getOpenSummary(organizationId: string) {
-    const openPayments = await this.prisma.client.payment.findMany({
-      where: { organizationId, cashClosingId: null },
-      include: {
-        student: { select: { id: true, fullName: true } },
-        allocations: { include: { charge: true } },
-        refunds: true,
-      },
-      orderBy: { receivedAt: "asc" },
-    });
+    const [openPayments, openSales] = await Promise.all([
+      this.prisma.client.payment.findMany({
+        where: { organizationId, cashClosingId: null },
+        include: {
+          student: { select: { id: true, fullName: true } },
+          allocations: { include: { charge: true } },
+          refunds: true,
+        },
+        orderBy: { receivedAt: "asc" },
+      }),
+      this.prisma.client.sale.findMany({
+        where: { organizationId, cashClosingId: null },
+        include: { lines: { include: { product: { select: { id: true, name: true } } } } },
+        orderBy: { soldAt: "asc" },
+      }),
+    ]);
 
-    return { totals: sumByMethod(openPayments), payments: openPayments };
+    // Un solo corte: el total debe cuadrar contra el dinero fisico del cajon,
+    // sin importar si vino de colegiaturas o de productos (ADR de M7). El
+    // desglose por origen se devuelve aparte para poder mostrarlo.
+    return {
+      totals: sumByMethod([
+        ...openPayments,
+        ...openSales.map((sale) => ({ method: sale.method, amount: sale.total })),
+      ]),
+      paymentTotals: sumByMethod(openPayments),
+      saleTotals: sumByMethod(
+        openSales.map((sale) => ({ method: sale.method, amount: sale.total })),
+      ),
+      payments: openPayments,
+      sales: openSales,
+    };
   }
 
   /** Desglose de un corte ya cerrado: cada pago que lo integra y a que cargos se aplico. */
@@ -68,43 +91,64 @@ export class CashClosingService {
       throw new NotFoundException({ errorCode: "CASH_CLOSING_NOT_FOUND" });
     }
 
-    const payments = await this.prisma.client.payment.findMany({
-      where: { cashClosingId: closingId },
-      include: {
-        student: { select: { id: true, fullName: true } },
-        allocations: { include: { charge: true } },
-        refunds: true,
-      },
-      orderBy: { receivedAt: "asc" },
-    });
+    const [payments, sales] = await Promise.all([
+      this.prisma.client.payment.findMany({
+        where: { cashClosingId: closingId },
+        include: {
+          student: { select: { id: true, fullName: true } },
+          allocations: { include: { charge: true } },
+          refunds: true,
+        },
+        orderBy: { receivedAt: "asc" },
+      }),
+      this.prisma.client.sale.findMany({
+        where: { cashClosingId: closingId },
+        include: { lines: { include: { product: { select: { id: true, name: true } } } } },
+        orderBy: { soldAt: "asc" },
+      }),
+    ]);
 
-    return { closing, payments };
+    return { closing, payments, sales };
   }
 
-  /** Agrupa todos los pagos abiertos (sin corte) por metodo de pago; una sola sucursal en el piloto. */
+  /**
+   * Agrupa por metodo de pago todo lo cobrado y aun no cerrado: pagos de
+   * colegiaturas y ventas de mostrador. Una sola sucursal en el piloto.
+   */
   async closeCash(organizationId: string, actorUserId: string) {
     const cashClosing = await this.prisma.client.$transaction(async (tx) => {
-      const openPayments = await tx.payment.findMany({
-        where: { organizationId, cashClosingId: null },
-        orderBy: { receivedAt: "asc" },
-      });
+      const [openPayments, openSales] = await Promise.all([
+        tx.payment.findMany({
+          where: { organizationId, cashClosingId: null },
+          orderBy: { receivedAt: "asc" },
+        }),
+        tx.sale.findMany({
+          where: { organizationId, cashClosingId: null },
+          orderBy: { soldAt: "asc" },
+        }),
+      ]);
 
-      if (openPayments.length === 0) {
+      if (openPayments.length === 0 && openSales.length === 0) {
         throw new BadRequestException({ errorCode: "CASH_CLOSING_NO_OPEN_PAYMENTS" });
       }
 
-      const totals = sumByMethod(openPayments);
+      const totals = sumByMethod([
+        ...openPayments,
+        ...openSales.map((sale) => ({ method: sale.method, amount: sale.total })),
+      ]);
 
-      const firstOpenPayment = openPayments[0];
-      if (!firstOpenPayment) {
-        throw new BadRequestException({ errorCode: "CASH_CLOSING_NO_OPEN_PAYMENTS" });
-      }
+      // El corte abre donde cerro el anterior; si es el primero, en el
+      // movimiento mas antiguo, sea un pago o una venta.
+      const firstMovementAt = [
+        ...openPayments.map((payment) => payment.receivedAt),
+        ...openSales.map((sale) => sale.soldAt),
+      ].reduce((earliest, current) => (current < earliest ? current : earliest));
 
       const lastClosing = await tx.cashClosing.findFirst({
         where: { organizationId },
         orderBy: { closedAt: "desc" },
       });
-      const openedAt = lastClosing?.closedAt ?? firstOpenPayment.receivedAt;
+      const openedAt = lastClosing?.closedAt ?? firstMovementAt;
 
       const created = await tx.cashClosing.create({
         data: {
@@ -118,10 +162,18 @@ export class CashClosingService {
         },
       });
 
-      await tx.payment.updateMany({
-        where: { id: { in: openPayments.map((payment) => payment.id) } },
-        data: { cashClosingId: created.id },
-      });
+      if (openPayments.length > 0) {
+        await tx.payment.updateMany({
+          where: { id: { in: openPayments.map((payment) => payment.id) } },
+          data: { cashClosingId: created.id },
+        });
+      }
+      if (openSales.length > 0) {
+        await tx.sale.updateMany({
+          where: { id: { in: openSales.map((sale) => sale.id) } },
+          data: { cashClosingId: created.id },
+        });
+      }
 
       return created;
     });

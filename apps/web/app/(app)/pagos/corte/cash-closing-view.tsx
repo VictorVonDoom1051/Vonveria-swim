@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { Button, Card, Modal, StatusBadge } from "@vonveria-swim/ui";
 import { apiFetch, ApiRequestError } from "../../../../lib/api-client";
-import type { CashClosingDetail, CashClosingItem, CashClosingOpenSummary, OpenPaymentItem } from "../types";
+import type {
+  CashClosingDetail,
+  CashClosingItem,
+  CashClosingOpenSummary,
+  OpenPaymentItem,
+} from "../types";
 
 const METHOD_LABELS: Record<string, string> = {
   CASH: "Efectivo",
@@ -13,7 +18,9 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 function formatMoney(amount: string): string {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(amount));
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
+    Number(amount),
+  );
 }
 
 function DetailIcon() {
@@ -43,9 +50,12 @@ function PaymentBreakdown({ payment }: { payment: OpenPaymentItem }) {
         <p className="font-medium text-text-primary">{formatMoney(payment.amount)}</p>
       </div>
       <p className="mb-2 text-text-secondary">
-        {METHOD_LABELS[payment.method] ?? payment.method} · {new Date(payment.receivedAt).toLocaleString("es-MX")}
+        {METHOD_LABELS[payment.method] ?? payment.method} ·{" "}
+        {new Date(payment.receivedAt).toLocaleString("es-MX")}
       </p>
-      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-text-secondary">Aplicado a</p>
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
+        Aplicado a
+      </p>
       <div className="flex flex-col gap-0.5">
         {payment.allocations.map((allocation) => (
           <div key={allocation.id} className="flex items-center justify-between text-text-primary">
@@ -56,7 +66,10 @@ function PaymentBreakdown({ payment }: { payment: OpenPaymentItem }) {
       </div>
       {payment.refunds.length > 0 ? (
         <p className="mt-2 text-status-error">
-          Devuelto: {formatMoney(String(payment.refunds.reduce((sum, refund) => sum + Number(refund.amount), 0)))}
+          Devuelto:{" "}
+          {formatMoney(
+            String(payment.refunds.reduce((sum, refund) => sum + Number(refund.amount), 0)),
+          )}
         </p>
       ) : null}
     </div>
@@ -96,8 +109,11 @@ export function CashClosingView({
       setClosings(refreshedClosings);
       setOpenSummary(refreshedOpenSummary);
     } catch (err) {
-      if (err instanceof ApiRequestError && err.body.errorCode === "CASH_CLOSING_NO_OPEN_PAYMENTS") {
-        setError("No hay pagos pendientes de corte.");
+      if (
+        err instanceof ApiRequestError &&
+        err.body.errorCode === "CASH_CLOSING_NO_OPEN_PAYMENTS"
+      ) {
+        setError("No hay movimientos pendientes de corte.");
       } else {
         setError("No se pudo cerrar la caja.");
       }
@@ -118,7 +134,9 @@ export function CashClosingView({
     );
     setDetailPayments([]);
     try {
-      const detail = await apiFetch<CashClosingDetail>(`/billing/cash-closings/${closing_.id}/detail`);
+      const detail = await apiFetch<CashClosingDetail>(
+        `/billing/cash-closings/${closing_.id}/detail`,
+      );
       setDetailPayments(detail.payments);
     } finally {
       setDetailLoading(false);
@@ -130,7 +148,12 @@ export function CashClosingView({
       <div className="flex flex-col gap-6 print:hidden">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-lg font-semibold text-text-primary">Corte de caja</h1>
-          <Button onClick={() => void handleClose()} disabled={closing || openSummary.payments.length === 0}>
+          <Button
+            onClick={() => void handleClose()}
+            disabled={
+              closing || (openSummary.payments.length === 0 && openSummary.sales.length === 0)
+            }
+          >
             {closing ? "Cerrando..." : "Cerrar caja"}
           </Button>
         </div>
@@ -140,31 +163,46 @@ export function CashClosingView({
         <Card className="max-w-2xl">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-text-primary">Pendiente de cerrar</h2>
-            <StatusBadge tone={openTotal > 0 ? "debt" : "success"}>{formatMoney(String(openTotal))}</StatusBadge>
+            <StatusBadge tone={openTotal > 0 ? "debt" : "success"}>
+              {formatMoney(String(openTotal))}
+            </StatusBadge>
           </div>
           <div className="mb-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
             <div>
               <p className="text-text-secondary">Efectivo</p>
-              <p className="font-medium text-text-primary">{formatMoney(openSummary.totals.CASH)}</p>
+              <p className="font-medium text-text-primary">
+                {formatMoney(openSummary.totals.CASH)}
+              </p>
             </div>
             <div>
               <p className="text-text-secondary">Transferencia</p>
-              <p className="font-medium text-text-primary">{formatMoney(openSummary.totals.TRANSFER)}</p>
+              <p className="font-medium text-text-primary">
+                {formatMoney(openSummary.totals.TRANSFER)}
+              </p>
             </div>
             <div>
               <p className="text-text-secondary">Tarjeta</p>
-              <p className="font-medium text-text-primary">{formatMoney(openSummary.totals.CARD)}</p>
+              <p className="font-medium text-text-primary">
+                {formatMoney(openSummary.totals.CARD)}
+              </p>
             </div>
             <div>
               <p className="text-text-secondary">Otro</p>
-              <p className="font-medium text-text-primary">{formatMoney(openSummary.totals.OTHER)}</p>
+              <p className="font-medium text-text-primary">
+                {formatMoney(openSummary.totals.OTHER)}
+              </p>
             </div>
           </div>
 
-          {openSummary.payments.length === 0 ? (
-            <p className="text-sm text-text-secondary">No hay pagos pendientes de corte.</p>
+          {openSummary.payments.length === 0 && openSummary.sales.length === 0 ? (
+            <p className="text-sm text-text-secondary">No hay movimientos pendientes de corte.</p>
           ) : (
             <div className="flex flex-col gap-1">
+              {openSummary.sales.length > 0 ? (
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                  Colegiaturas
+                </p>
+              ) : null}
               {openSummary.payments.map((payment) => (
                 <div
                   key={payment.id}
@@ -190,6 +228,41 @@ export function CashClosingView({
                   </div>
                 </div>
               ))}
+
+              {openSummary.sales.length > 0 ? (
+                <>
+                  <p className="mb-1 mt-3 text-xs font-medium uppercase tracking-wide text-text-secondary">
+                    Tienda ·{" "}
+                    {formatMoney(
+                      String(
+                        Number(openSummary.saleTotals.CASH) +
+                          Number(openSummary.saleTotals.TRANSFER) +
+                          Number(openSummary.saleTotals.CARD) +
+                          Number(openSummary.saleTotals.OTHER),
+                      ),
+                    )}
+                  </p>
+                  {openSummary.sales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="flex items-center justify-between rounded-md border border-border-subtle p-2 text-sm"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-text-primary">
+                          {sale.lines
+                            .map((line) => `${line.product.name} x${line.quantity}`)
+                            .join(", ")}
+                        </p>
+                        <p className="text-text-secondary">
+                          {METHOD_LABELS[sale.method] ?? sale.method} ·{" "}
+                          {new Date(sale.soldAt).toLocaleString("es-MX")}
+                        </p>
+                      </div>
+                      <p className="font-medium text-text-primary">{formatMoney(sale.total)}</p>
+                    </div>
+                  ))}
+                </>
+              ) : null}
             </div>
           )}
         </Card>
@@ -219,7 +292,9 @@ export function CashClosingView({
                 </div>
                 <div>
                   <p className="text-text-secondary">Transferencia</p>
-                  <p className="font-medium text-text-primary">{formatMoney(closing_.totalTransfer)}</p>
+                  <p className="font-medium text-text-primary">
+                    {formatMoney(closing_.totalTransfer)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-text-secondary">Tarjeta</p>
@@ -227,7 +302,9 @@ export function CashClosingView({
                 </div>
                 <div>
                   <p className="text-text-secondary">Otro</p>
-                  <p className="font-medium text-text-primary">{formatMoney(closing_.totalOther)}</p>
+                  <p className="font-medium text-text-primary">
+                    {formatMoney(closing_.totalOther)}
+                  </p>
                 </div>
               </div>
             </Card>

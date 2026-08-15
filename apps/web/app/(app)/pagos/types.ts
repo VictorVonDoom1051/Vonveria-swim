@@ -74,14 +74,41 @@ export interface OpenPaymentItem {
   refunds: RefundItem[];
 }
 
+export interface MethodTotals {
+  CASH: string;
+  TRANSFER: string;
+  CARD: string;
+  OTHER: string;
+}
+
+/** Venta de mostrador (M7). Entra al mismo corte que los pagos. */
+export interface OpenSaleItem {
+  id: string;
+  total: string;
+  method: PaymentMethod;
+  soldAt: string;
+  lines: Array<{
+    id: string;
+    quantity: number;
+    unitPrice: string;
+    lineTotal: string;
+    product: { id: string; name: string };
+  }>;
+}
+
 export interface CashClosingOpenSummary {
-  totals: { CASH: string; TRANSFER: string; CARD: string; OTHER: string };
+  /** Colegiaturas y productos juntos: es lo que debe haber en el cajon. */
+  totals: MethodTotals;
+  paymentTotals: MethodTotals;
+  saleTotals: MethodTotals;
   payments: OpenPaymentItem[];
+  sales: OpenSaleItem[];
 }
 
 export interface CashClosingDetail {
   closing: CashClosingItem;
   payments: OpenPaymentItem[];
+  sales: OpenSaleItem[];
 }
 
 export interface ReceiptDetail {

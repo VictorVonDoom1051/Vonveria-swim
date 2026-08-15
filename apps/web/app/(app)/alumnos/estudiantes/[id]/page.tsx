@@ -15,7 +15,9 @@ export default async function StudentPage({ params }: { params: { id: string } }
     serverFetch<ProgramItem[]>("/programs"),
     canManageBilling ? serverFetch<ChargeItem[]>(`/billing/charges/students/${params.id}`) : null,
     canManageBilling ? serverFetch<PaymentItem[]>(`/billing/payments/students/${params.id}`) : null,
-    canManageBilling ? serverFetch<PackageCreditItem[]>(`/billing/packages/students/${params.id}`) : null,
+    canManageBilling
+      ? serverFetch<PackageCreditItem[]>(`/billing/packages/students/${params.id}`)
+      : null,
   ]);
 
   if (!student) {

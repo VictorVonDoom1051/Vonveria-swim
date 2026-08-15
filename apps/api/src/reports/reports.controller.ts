@@ -19,7 +19,9 @@ export class ReportsController {
     @Query("to") toParam?: string,
   ) {
     const to = toParam ? new Date(toParam) : new Date();
-    const from = fromParam ? new Date(fromParam) : new Date(to.getTime() - DEFAULT_RANGE_DAYS * 24 * 60 * 60 * 1000);
+    const from = fromParam
+      ? new Date(fromParam)
+      : new Date(to.getTime() - DEFAULT_RANGE_DAYS * 24 * 60 * 60 * 1000);
     return this.reportsService.getBillingSummary(user.organizationId, from, to);
   }
 }

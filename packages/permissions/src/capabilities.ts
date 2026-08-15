@@ -15,6 +15,9 @@ export const CAPABILITIES = {
   // M3: cobranza.
   BILLING_MANAGE: "billing:manage",
   BILLING_ADJUST: "billing:adjust",
+  // M7: productos, inventario y venta de mostrador.
+  SALES_MANAGE: "sales:manage",
+  INVENTORY_MANAGE: "inventory:manage",
 } as const;
 
 export type Capability = (typeof CAPABILITIES)[keyof typeof CAPABILITIES];
@@ -45,5 +48,13 @@ export const CAPABILITY_CATALOG: readonly CapabilityDefinition[] = [
   {
     key: CAPABILITIES.BILLING_ADJUST,
     description: "Aplicar ajustes, descuentos y devoluciones",
+  },
+  {
+    key: CAPABILITIES.SALES_MANAGE,
+    description: "Cobrar ventas de productos en el mostrador",
+  },
+  {
+    key: CAPABILITIES.INVENTORY_MANAGE,
+    description: "Administrar productos, precios y existencias",
   },
 ];

@@ -39,6 +39,7 @@ git push -u origin main
 ## Step 3: Configure Services
 
 Railway will auto-detect and create:
+
 - **apps/web** (Next.js) — Frontend
 - **apps/api** (NestJS) — Backend
 - **PostgreSQL** — Database
@@ -46,6 +47,7 @@ Railway will auto-detect and create:
 ### For Each Service:
 
 #### Web (Next.js)
+
 ```
 Service Name: vonveria-swim-web
 Build: pnpm build
@@ -55,6 +57,7 @@ Port: 3100
 ```
 
 #### API (NestJS)
+
 ```
 Service Name: vonveria-swim-api
 Build: pnpm --filter @vonveria-swim/api build
@@ -64,6 +67,7 @@ Port: 3001
 ```
 
 #### Database (PostgreSQL)
+
 ```
 Let Railway auto-provision PostgreSQL 15+
 ```
@@ -75,12 +79,14 @@ Let Railway auto-provision PostgreSQL 15+
 In Railway dashboard → Project Settings → Variables:
 
 ### Web Service (`vonveria-swim-web`)
+
 ```
 NODE_ENV=production
 NEXT_PUBLIC_API_URL=https://<api-domain>.railway.app
 ```
 
 ### API Service (`vonveria-swim-api`)
+
 ```
 NODE_ENV=production
 DATABASE_URL=$DATABASE_URL  # Auto-provided by PostgreSQL plugin
@@ -90,6 +96,7 @@ ADMIN_PASSWORD=12345678acs
 ```
 
 ### PostgreSQL Plugin
+
 - **Auto-added by Railway** when you connect a database
 - Provides `DATABASE_URL` environment variable
 - **Initial password:** Auto-generated, save it
@@ -101,14 +108,17 @@ ADMIN_PASSWORD=12345678acs
 After deployment, run migrations and seed:
 
 ### Option A: Railway Shell (Recommended)
+
 1. In Railway dashboard → API service → "Shell"
 2. Run:
+
 ```bash
 pnpm db:migrate
 pnpm db:seed
 ```
 
 ### Option B: Local Script
+
 ```bash
 # After deployment, get DATABASE_URL from Railway
 # Then locally:
@@ -131,6 +141,7 @@ After successful deployment:
 ## Step 7: Test on Mobile
 
 ### iPhone/Android
+
 1. On your phone, open browser
 2. Visit: `https://vonveria-swim-web-<random>.railway.app`
 3. Login with:
@@ -138,6 +149,7 @@ After successful deployment:
    - **Instructor:** `instructor@vonveria.mx` / `12345678acs`
 
 ### Desktop (QA Testing)
+
 - Visit same URL from laptop browser
 - Test responsive design at different breakpoints
 - F12 Developer Tools → Device toolbar
@@ -146,43 +158,48 @@ After successful deployment:
 
 ## Scaling (Beyond Free Tier)
 
-| Tier | Price | Specs | Use Case |
-|------|-------|-------|----------|
-| **Free (Trial)** | $0 | 5GB RAM, 100GB storage | Development |
-| **Pay as you go** | ~$0.000231/hour | Per 1 CPU/1GB RAM | Small pilot |
-| **Starter Plan** | $5-15/month | 2 CPU, 4GB RAM, dedicated DB | Production pilot |
+| Tier              | Price           | Specs                        | Use Case         |
+| ----------------- | --------------- | ---------------------------- | ---------------- |
+| **Free (Trial)**  | $0              | 5GB RAM, 100GB storage       | Development      |
+| **Pay as you go** | ~$0.000231/hour | Per 1 CPU/1GB RAM            | Small pilot      |
+| **Starter Plan**  | $5-15/month     | 2 CPU, 4GB RAM, dedicated DB | Production pilot |
 
 ---
 
 ## Monitoring & Logs
 
 ### View Logs
+
 ```
 Railway Dashboard → Service → Logs
 ```
 
 ### Check Health
+
 ```bash
 # API health check
 curl https://<api-domain>.railway.app/health
 
-# Web health check  
+# Web health check
 curl https://<web-domain>.railway.app
 ```
 
 ### Common Issues
 
 **502 Bad Gateway**
+
 - Check API service logs
 - Verify DATABASE_URL is correct
 - Ensure migrations ran
 
 **Database connection refused**
+
 - Verify PostgreSQL service is running
 - Check DATABASE_URL in environment
 - Ensure firewall allows connections
 
 **CORS errors on mobile**
+
 - Verify NEXT_PUBLIC_API_URL matches actual API domain
 - Check API CORS configuration
 
@@ -191,12 +208,14 @@ curl https://<web-domain>.railway.app
 ## Backup & Data
 
 ### Export Database (Before Deleting Project)
+
 ```bash
 # From Railway shell or local
 pg_dump $DATABASE_URL > backup.sql
 ```
 
 ### Restore Database
+
 ```bash
 psql $DATABASE_URL < backup.sql
 ```
@@ -205,14 +224,14 @@ psql $DATABASE_URL < backup.sql
 
 ## Cost Estimate (First Month)
 
-| Service | Hours | Cost/Hour | Total |
-|---------|-------|-----------|-------|
-| Web (Next.js) | 730 | $0.00 | $0 (free tier) |
-| API (NestJS) | 730 | $0.00 | $0 (free tier) |
-| PostgreSQL | 730 | $0.00 | $0 (free tier) |
-| **Total** | — | — | **$0 (free tier)** |
+| Service       | Hours | Cost/Hour | Total              |
+| ------------- | ----- | --------- | ------------------ |
+| Web (Next.js) | 730   | $0.00     | $0 (free tier)     |
+| API (NestJS)  | 730   | $0.00     | $0 (free tier)     |
+| PostgreSQL    | 730   | $0.00     | $0 (free tier)     |
+| **Total**     | —     | —         | **$0 (free tier)** |
 
-*Free tier limits: 5GB storage, 100GB/month egress. Sufficient for pilot testing.*
+_Free tier limits: 5GB storage, 100GB/month egress. Sufficient for pilot testing._
 
 ---
 

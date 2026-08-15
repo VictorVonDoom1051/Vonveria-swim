@@ -1,4 +1,14 @@
-import { IsDateString, IsDecimal, IsEnum, IsInt, IsOptional, IsUUID, Max, Min, ValidateIf } from "class-validator";
+import {
+  IsDateString,
+  IsDecimal,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+  ValidateIf,
+} from "class-validator";
 import { BillingModality } from "@vonveria-swim/database";
 
 export class CreateEnrollmentDto {

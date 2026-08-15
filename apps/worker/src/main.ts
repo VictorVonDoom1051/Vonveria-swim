@@ -14,7 +14,9 @@ if (existsSync(rootEnvPath)) {
 }
 
 const intervalMs = Number(process.env.WORKER_HEARTBEAT_INTERVAL_MS ?? 60_000);
-const monthlyFeeIntervalMs = Number(process.env.WORKER_MONTHLY_FEE_INTERVAL_MS ?? 24 * 60 * 60 * 1000);
+const monthlyFeeIntervalMs = Number(
+  process.env.WORKER_MONTHLY_FEE_INTERVAL_MS ?? 24 * 60 * 60 * 1000,
+);
 const prisma = getPrismaClient();
 
 async function runHeartbeat(): Promise<void> {

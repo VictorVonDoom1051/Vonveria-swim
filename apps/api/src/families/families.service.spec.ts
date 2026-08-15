@@ -50,11 +50,15 @@ describe("FamiliesService aislamiento por organizacion", () => {
     // Mismo nombre de alumno en dos organizaciones distintas, a proposito.
     await familiesService.createFamily(organizationAId, actorA.id, { fullName: "Tutor A" });
     const familyA = (await familiesService.search(organizationAId, "Tutor A"))[0]!;
-    await familiesService.createStudent(organizationAId, actorA.id, familyA.id, { fullName: sharedName });
+    await familiesService.createStudent(organizationAId, actorA.id, familyA.id, {
+      fullName: sharedName,
+    });
 
     await familiesService.createFamily(organizationBId, actorB.id, { fullName: "Tutor B" });
     const familyB = (await familiesService.search(organizationBId, "Tutor B"))[0]!;
-    await familiesService.createStudent(organizationBId, actorB.id, familyB.id, { fullName: sharedName });
+    await familiesService.createStudent(organizationBId, actorB.id, familyB.id, {
+      fullName: sharedName,
+    });
   });
 
   afterAll(async () => {

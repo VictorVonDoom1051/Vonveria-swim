@@ -6,7 +6,14 @@ import {
   DEFAULT_TIMEZONE,
 } from "@vonveria-swim/configuration";
 import { CAPABILITIES, CAPABILITY_CATALOG } from "@vonveria-swim/permissions";
-import { RoleKey, WeekDay, getPrismaClient, type PrismaClient } from "./index";
+import {
+  ProductCategory,
+  RoleKey,
+  StockMovementReason,
+  WeekDay,
+  getPrismaClient,
+  type PrismaClient,
+} from "./index";
 
 const PILOT_ORGANIZATION_NAME = "Escuela Piloto VonverIA Swim";
 
@@ -23,6 +30,8 @@ const ROLE_DEFINITIONS: Array<{ key: RoleKey; name: string; capabilities: readon
       CAPABILITIES.SCHEDULING_MANAGE,
       CAPABILITIES.BILLING_MANAGE,
       CAPABILITIES.BILLING_ADJUST,
+      CAPABILITIES.SALES_MANAGE,
+      CAPABILITIES.INVENTORY_MANAGE,
     ],
   },
   {
@@ -32,6 +41,8 @@ const ROLE_DEFINITIONS: Array<{ key: RoleKey; name: string; capabilities: readon
       CAPABILITIES.STUDENTS_MANAGE,
       CAPABILITIES.SCHEDULING_MANAGE,
       CAPABILITIES.BILLING_MANAGE,
+      // Vende en el mostrador, pero no administra productos ni existencias.
+      CAPABILITIES.SALES_MANAGE,
     ],
   },
   { key: RoleKey.INSTRUCTOR, name: "Instructor", capabilities: [] },
@@ -145,6 +156,50 @@ async function seedAdminUser(
     update: {},
     create: { userId: user.id, roleId: direccionRoleId },
   });
+}
+
+/** Catalogo demo de la tienda, para poder probar el mostrador sin capturar nada. */
+async function seedProducts(prisma: PrismaClient, organizationId: string): Promise<void> {
+  const catalog = [
+    {
+      name: "Gorro de natacion",
+      category: ProductCategory.EQUIPMENT,
+      unitPrice: "120.00",
+      stock: 25,
+    },
+    { name: "Googles", category: ProductCategory.EQUIPMENT, unitPrice: "250.00", stock: 15 },
+    { name: "Agua 600ml", category: ProductCategory.CONSUMABLE, unitPrice: "20.00", stock: 48 },
+    { name: "Dulce", category: ProductCategory.CONSUMABLE, unitPrice: "10.00", stock: 60 },
+  ];
+
+  for (const item of catalog) {
+    const product = await prisma.product.upsert({
+      where: { organizationId_name: { organizationId, name: item.name } },
+      update: {},
+      create: {
+        organizationId,
+        name: item.name,
+        category: item.category,
+        unitPrice: item.unitPrice,
+      },
+    });
+
+    // Solo se siembra la existencia inicial la primera vez: reejecutar el seed
+    // no debe inflar el inventario.
+    const existingMovements = await prisma.stockMovement.count({
+      where: { productId: product.id },
+    });
+    if (existingMovements === 0) {
+      await prisma.stockMovement.create({
+        data: {
+          productId: product.id,
+          delta: item.stock,
+          reason: StockMovementReason.PURCHASE,
+          notes: "Existencia inicial de demostracion",
+        },
+      });
+    }
+  }
 }
 
 async function seedReceptionUser(
@@ -357,6 +412,7 @@ async function main(): Promise<void> {
   await seedAdminUser(prisma, organization.id, roleIdsByKey[RoleKey.DIRECCION]);
   await seedReceptionUser(prisma, organization.id, roleIdsByKey[RoleKey.RECEPCION]);
   await seedInstructorWithTodayClasses(prisma, organization.id, roleIdsByKey[RoleKey.INSTRUCTOR]);
+  await seedProducts(prisma, organization.id);
 
   console.log("Seed de packages/database completado.");
   console.log(`Organizacion piloto: ${organization.name} (${organization.id})`);

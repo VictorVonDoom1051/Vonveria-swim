@@ -133,7 +133,10 @@ describe("PaymentsService.createPayment — asignacion automatica", () => {
       where: { id: charge.id },
       include: { allocations: true },
     });
-    const allocatedTotal = updated.allocations.reduce((sum, allocation) => sum + allocation.amount.toNumber(), 0);
+    const allocatedTotal = updated.allocations.reduce(
+      (sum, allocation) => sum + allocation.amount.toNumber(),
+      0,
+    );
     expect(allocatedTotal).toBe(100);
     expect(updated.status).toBe("PAID");
   });
@@ -173,15 +176,26 @@ describe("PaymentsService.createPayment — concurrencia", () => {
 
   it("dos pagos simultaneos sobre el mismo cargo no asignan mas de lo debido", async () => {
     await Promise.all([
-      paymentsService.createPayment(organizationId, actorUserId, { studentId, amount: "300.00", method: "CASH" }),
-      paymentsService.createPayment(organizationId, actorUserId, { studentId, amount: "300.00", method: "CASH" }),
+      paymentsService.createPayment(organizationId, actorUserId, {
+        studentId,
+        amount: "300.00",
+        method: "CASH",
+      }),
+      paymentsService.createPayment(organizationId, actorUserId, {
+        studentId,
+        amount: "300.00",
+        method: "CASH",
+      }),
     ]);
 
     const charge = await prisma.client.charge.findUniqueOrThrow({
       where: { id: chargeId },
       include: { allocations: true },
     });
-    const allocatedTotal = charge.allocations.reduce((sum, allocation) => sum + allocation.amount.toNumber(), 0);
+    const allocatedTotal = charge.allocations.reduce(
+      (sum, allocation) => sum + allocation.amount.toNumber(),
+      0,
+    );
     expect(allocatedTotal).toBe(500);
     expect(charge.status).toBe("PAID");
   });
@@ -377,7 +391,9 @@ describe("ChargesService.cancelCharge", () => {
       method: "CASH",
     });
 
-    await expect(chargesService.cancelCharge(organizationId, actorUserId, charge.id)).rejects.toThrow();
+    await expect(
+      chargesService.cancelCharge(organizationId, actorUserId, charge.id),
+    ).rejects.toThrow();
   });
 });
 
@@ -411,7 +427,11 @@ describe("CashClosingService.closeCash", () => {
       description: "Cargo transferencia",
       amount: "200.00",
     });
-    await paymentsService.createPayment(organizationId, actorUserId, { studentId, amount: "100.00", method: "CASH" });
+    await paymentsService.createPayment(organizationId, actorUserId, {
+      studentId,
+      amount: "100.00",
+      method: "CASH",
+    });
     await paymentsService.createPayment(organizationId, actorUserId, {
       studentId,
       amount: "200.00",

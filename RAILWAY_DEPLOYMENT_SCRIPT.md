@@ -63,7 +63,7 @@ In Railway Dashboard:
 
 1. **Click "New Service"**
 2. **Select "Database"**
-3. **PostgreSQL** 
+3. **PostgreSQL**
 4. Railway auto-provisions and sets `DATABASE_URL` environment variable
 
 ---
@@ -160,20 +160,24 @@ curl https://vonveria-swim-web-<random>.railway.app
 ## Troubleshooting
 
 ### Build Failed
+
 - Check Railway Dashboard → Service → "Logs"
 - Verify `pnpm` version in package.json
 - Ensure all dependencies are in pnpm-lock.yaml
 
 ### Database Connection Error
+
 - Verify `DATABASE_URL` is set
 - Check PostgreSQL service is running
 - Ensure migrations ran successfully
 
 ### CORS Errors on Mobile
+
 - Update `NEXT_PUBLIC_API_URL` in Web service env vars
 - Must match exact API domain from Railway
 
 ### Container Port Issue
+
 - Railway auto-detects ports from package.json scripts
 - Ensure `start` script in root package.json points to web service
 
@@ -181,14 +185,14 @@ curl https://vonveria-swim-web-<random>.railway.app
 
 ## Cost (First Month)
 
-| Item | Cost |
-|------|------|
+| Item                | Cost           |
+| ------------------- | -------------- |
 | Compute (Web + API) | $0 (free tier) |
-| PostgreSQL | $0 (free tier) |
-| Storage | 5GB included |
-| Total | **$0** |
+| PostgreSQL          | $0 (free tier) |
+| Storage             | 5GB included   |
+| Total               | **$0**         |
 
-*Free tier sufficient for internal beta testing*
+_Free tier sufficient for internal beta testing_
 
 ---
 
