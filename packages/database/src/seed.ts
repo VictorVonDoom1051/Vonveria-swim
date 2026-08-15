@@ -128,7 +128,10 @@ async function seedAdminUser(
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.upsert({
     where: { organizationId_email: { organizationId, email } },
-    update: { passwordHash },
+    // La contrasena solo se fija al crear: el seed corre antes de cada despliegue
+    // y si la reescribiera revertiria la que el usuario haya cambiado desde
+    // Configuracion. Para restablecerla existe el flujo de /settings/users.
+    update: {},
     create: {
       organizationId,
       email,
@@ -156,7 +159,8 @@ async function seedReceptionUser(
 
   const user = await prisma.user.upsert({
     where: { organizationId_email: { organizationId, email: "recepcion@vonveria.mx" } },
-    update: { passwordHash },
+    // Solo al crear, para no revertir un cambio de contrasena hecho desde la interfaz.
+    update: {},
     create: {
       organizationId,
       email: "recepcion@vonveria.mx",
@@ -183,7 +187,8 @@ async function seedInstructorWithTodayClasses(
 
   const instructor = await prisma.user.upsert({
     where: { organizationId_email: { organizationId, email: "instructor@vonveria.mx" } },
-    update: { passwordHash },
+    // Solo al crear, para no revertir un cambio de contrasena hecho desde la interfaz.
+    update: {},
     create: {
       organizationId,
       email: "instructor@vonveria.mx",
