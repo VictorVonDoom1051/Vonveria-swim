@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "build": "pnpm --recursive --if-present --filter \"./apps/*\" --filter \"./packages/*\" build",
+    "start": "pnpm --filter @vonveria-swim/web start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
