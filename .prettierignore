@@ -1,0 +1,13 @@
+node_modules
+dist
+.next
+build
+coverage
+generated
+pnpm-lock.yaml
+next-env.d.ts
+
+# Documentos fuente de verdad copiados tal cual (Seccion 2 de CLAUDE.md);
+# no se reformatean automaticamente.
+CLAUDE.md
+docs/product/MASTER_SPEC.md

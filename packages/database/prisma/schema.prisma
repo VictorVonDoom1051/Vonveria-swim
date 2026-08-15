@@ -1,0 +1,675 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Registro minimo usado solo en M0 para demostrar el pipeline
+/// DB -> Prisma -> API -> Web.
+model AppMetadata {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_metadata")
+}
+
+// ---------------------------------------------------------------------------
+// M1 - Organizacion, acceso y auditoria (ver docs/decisions y MASTER_SPEC 6.1)
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum RoleKey {
+  DIRECCION
+  RECEPCION
+  INSTRUCTOR
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  timezone  String   @default("America/Mexico_City")
+  currency  String   @default("MXN")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  branding  BrandingSettings?
+  users     User[]
+  roles     Role[]
+  auditLogs AuditLog[]
+
+  branches    Branch[]
+  programs    Program[]
+  families    Family[]
+  students    Student[]
+  groups      Group[]
+  enrollments Enrollment[]
+
+  charges        Charge[]
+  payments       Payment[]
+  packageCredits PackageCredit[]
+  cashClosings   CashClosing[]
+
+  @@map("organizations")
+}
+
+model BrandingSettings {
+  id             String   @id @default(uuid())
+  organizationId String   @unique @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  logoUrl        String?  @map("logo_url")
+  faviconUrl     String?  @map("favicon_url")
+  primaryColor   String   @default("#0B3C5D") @map("primary_color")
+  accentColor    String   @default("#1FB6A6") @map("accent_color")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("branding_settings")
+}
+
+/// El "reset" de contrasena en M1 lo hace Direccion desde el panel de
+/// usuarios (sin correo real todavia, ver docs/decisions). No hay tabla
+/// de tokens de recuperacion por eso.
+model User {
+  id             String     @id @default(uuid())
+  organizationId String     @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  email          String
+  passwordHash   String     @map("password_hash")
+  fullName       String     @map("full_name")
+  status         UserStatus @default(ACTIVE)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  deletedAt      DateTime?  @map("deleted_at")
+
+  roles          UserRole[]
+  sessions       Session[]
+  auditLogsAsActor AuditLog[] @relation("AuditLogActor")
+  instructedGroups Group[]   @relation("GroupInstructor")
+
+  @@unique([organizationId, email])
+  @@map("users")
+}
+
+/// Los roles son conjuntos predeterminados de capacidades, no condiciones
+/// rigidas en el codigo (MASTER_SPEC 6.1). Las capacidades reales viven en
+/// Permission/RolePermission.
+model Role {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  key            RoleKey
+  name           String
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([organizationId, key])
+  @@map("roles")
+}
+
+/// Catalogo global de capacidades individuales (Seccion 15 de CLAUDE.md:
+/// "RBAC basado en capacidades"). Se amplia en cada hito segun el modulo
+/// que se construya; M1 solo siembra las que ya hace cumplir un guard real.
+model Permission {
+  id          String @id @default(uuid())
+  key         String @unique
+  description String
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+/// Sesion respaldada en base de datos para autenticacion por cookie
+/// httpOnly (Seccion 15: "cookies/sesiones seguras"). Solo se guarda el
+/// hash del token, nunca el token en claro.
+model Session {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique @map("token_hash")
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address")
+
+  @@map("sessions")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  actorUserId    String?  @map("actor_user_id")
+  actor          User?    @relation("AuditLogActor", fields: [actorUserId], references: [id])
+  action         String
+  entityType     String   @map("entity_type")
+  entityId       String?  @map("entity_id")
+  metadata       Json?
+  reason         String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId, createdAt])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// M2 - Instalaciones, catalogo, familias/alumnos y clases (ver plan de M2 en
+// docs/decisions y MASTER_SPEC 6/13). Sin cargos (M3), sin asistencia (M4),
+// sin lista de espera ni cierres de instalaciones (fases posteriores).
+// ---------------------------------------------------------------------------
+
+enum ProgramType {
+  GROUP
+  INDIVIDUAL
+  BABIES
+  ADULTS
+  OTHER
+}
+
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  TRANSFERRED
+  CANCELLED
+  FROZEN
+}
+
+model Branch {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  pools  Pool[]
+  groups Group[]
+
+  @@unique([organizationId, name])
+  @@map("branches")
+}
+
+model Pool {
+  id        String   @id @default(uuid())
+  branchId  String   @map("branch_id")
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lanes  Lane[]
+  groups Group[]
+
+  @@unique([branchId, name])
+  @@map("pools")
+}
+
+model Lane {
+  id        String   @id @default(uuid())
+  poolId    String   @map("pool_id")
+  pool      Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  groups Group[]
+
+  @@unique([poolId, name])
+  @@map("lanes")
+}
+
+/// Tipos de programa configurables (Seccion 5 MASTER_SPEC: grupal, individual,
+/// bebes, adultos u otros).
+model Program {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  type           ProgramType  @default(GROUP)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  levels Level[]
+  groups Group[]
+
+  @@unique([organizationId, name])
+  @@map("programs")
+}
+
+model Level {
+  id        String   @id @default(uuid())
+  programId String   @map("program_id")
+  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  groups Group[]
+
+  @@unique([programId, name])
+  @@map("levels")
+}
+
+model Family {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  guardians Guardian[]
+  students  Student[]
+
+  @@map("families")
+}
+
+model Guardian {
+  id        String   @id @default(uuid())
+  familyId  String   @map("family_id")
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  fullName  String   @map("full_name")
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("guardians")
+}
+
+/// medicalAlerts es texto libre a proposito: subir documentos/consentimientos
+/// requiere S3 real, fuera de alcance de M2 (Seccion 23: integracion externa).
+model Student {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  familyId       String       @map("family_id")
+  family         Family       @relation(fields: [familyId], references: [id])
+  fullName       String       @map("full_name")
+  birthDate      DateTime?    @map("birth_date")
+  medicalAlerts  String?      @map("medical_alerts")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  deletedAt      DateTime?    @map("deleted_at")
+
+  emergencyContacts EmergencyContact[]
+  enrollments       Enrollment[]
+
+  charges        Charge[]
+  payments       Payment[]
+  packageCredits PackageCredit[]
+  attendances    Attendance[]
+
+  @@map("students")
+}
+
+model EmergencyContact {
+  id           String   @id @default(uuid())
+  studentId    String   @map("student_id")
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fullName     String   @map("full_name")
+  phone        String
+  relationship String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("emergency_contacts")
+}
+
+/// Un solo carril y un solo instructor por grupo en M2 (ver plan: varios
+/// carriles/instructores por grupo se difiere a diseno aprobado posterior).
+model Group {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  name           String
+  programId      String       @map("program_id")
+  program        Program      @relation(fields: [programId], references: [id])
+  levelId        String       @map("level_id")
+  level          Level        @relation(fields: [levelId], references: [id])
+  branchId       String       @map("branch_id")
+  branch         Branch       @relation(fields: [branchId], references: [id])
+  poolId         String       @map("pool_id")
+  pool           Pool         @relation(fields: [poolId], references: [id])
+  laneId         String?      @map("lane_id")
+  lane           Lane?        @relation(fields: [laneId], references: [id])
+  instructorId   String?      @map("instructor_id")
+  instructor     User?        @relation("GroupInstructor", fields: [instructorId], references: [id])
+  capacity       Int
+  isPublished    Boolean      @default(false) @map("is_published")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  scheduleRules ScheduleRule[]
+  sessions      ClassSession[]
+  enrollments   Enrollment[]
+
+  @@map("groups")
+}
+
+/// startTime en formato "HH:mm", interpretado en la zona horaria de la
+/// organizacion (Organization.timezone), no en UTC.
+model ScheduleRule {
+  id              String   @id @default(uuid())
+  groupId         String   @map("group_id")
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  weekDay         WeekDay  @map("week_day")
+  startTime       String   @map("start_time")
+  durationMinutes Int      @map("duration_minutes")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("schedule_rules")
+}
+
+/// Generadas al publicar un grupo, horizonte fijo de 8 semanas (ver plan).
+/// Unique en [groupId, startsAt] para que publicar dos veces no duplique.
+model ClassSession {
+  id        String   @id @default(uuid())
+  groupId   String   @map("group_id")
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  startsAt  DateTime @map("starts_at")
+  endsAt    DateTime @map("ends_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  packageCreditMovements PackageCreditMovement[]
+  attendances            Attendance[]
+
+  @@unique([groupId, startsAt])
+  @@map("class_sessions")
+}
+
+/// Seccion 13 de CLAUDE.md: "una inscripcion activa define modalidad de
+/// cobro y fecha de inicio". Los campos de modalidad se usan desde M3.
+model Enrollment {
+  id             String           @id @default(uuid())
+  organizationId String           @map("organization_id")
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  studentId      String           @map("student_id")
+  student        Student          @relation(fields: [studentId], references: [id])
+  groupId        String           @map("group_id")
+  group          Group            @relation(fields: [groupId], references: [id])
+  status         EnrollmentStatus @default(ACTIVE)
+  startDate      DateTime         @map("start_date")
+  billingModality   BillingModality @default(NONE) @map("billing_modality")
+  monthlyRateAmount Decimal?        @db.Decimal(10, 2) @map("monthly_rate_amount")
+  monthlyDueDay     Int?            @map("monthly_due_day")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  statusHistory  EnrollmentStatusHistory[]
+  charges        Charge[]
+  packageCredits PackageCredit[]
+
+  @@map("enrollments")
+}
+
+/// Append-only: un cambio de estado (cambio de grupo, baja, congelamiento)
+/// nunca sobreescribe sin dejar rastro (mismo principio que auditoria
+/// financiera, Seccion 12 de CLAUDE.md).
+model EnrollmentStatusHistory {
+  id           String            @id @default(uuid())
+  enrollmentId String            @map("enrollment_id")
+  enrollment   Enrollment        @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  fromStatus   EnrollmentStatus? @map("from_status")
+  toStatus     EnrollmentStatus  @map("to_status")
+  reason       String?
+  actorUserId  String?           @map("actor_user_id")
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  @@map("enrollment_status_history")
+}
+
+// ---------------------------------------------------------------------------
+// M3 - Cobranza (ver plan de M3 y CLAUDE.md Seccion 12). Sin pasarela de pago
+// real (confirmado por el usuario); los pagos se registran a mano. Ningun
+// saldo se guarda como campo editable: siempre se calcula desde movimientos.
+// ---------------------------------------------------------------------------
+
+enum BillingModality {
+  NONE
+  MONTHLY
+  PACKAGE
+  SINGLE_CLASS
+}
+
+enum ChargeType {
+  ENROLLMENT_FEE
+  MONTHLY_FEE
+  PACKAGE
+  SINGLE_CLASS
+  OTHER
+}
+
+enum ChargeStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  OTHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT_JUSTIFIED
+}
+
+/// periodYear/periodMonth solo se usan en cargos MONTHLY_FEE: junto con
+/// enrollmentId forman la clave de idempotencia que evita que el job del
+/// worker duplique una mensualidad si corre dos veces (Postgres no compara
+/// NULLs como iguales, asi que el resto de los tipos de cargo no chocan
+/// entre si aunque compartan enrollmentId).
+model Charge {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  studentId      String       @map("student_id")
+  student        Student      @relation(fields: [studentId], references: [id])
+  enrollmentId   String?      @map("enrollment_id")
+  enrollment     Enrollment?  @relation(fields: [enrollmentId], references: [id])
+  type           ChargeType
+  description    String
+  amount         Decimal      @db.Decimal(10, 2)
+  currency       String       @default("MXN")
+  dueDate        DateTime?    @map("due_date")
+  status         ChargeStatus @default(PENDING)
+  periodYear     Int?         @map("period_year")
+  periodMonth    Int?         @map("period_month")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  adjustments   Adjustment[]
+  allocations   PaymentAllocation[]
+  packageCredit PackageCredit?
+
+  @@unique([enrollmentId, periodYear, periodMonth])
+  @@index([organizationId, status])
+  @@map("charges")
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  organizationId String        @map("organization_id")
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  studentId      String        @map("student_id")
+  student        Student       @relation(fields: [studentId], references: [id])
+  amount         Decimal       @db.Decimal(10, 2)
+  method         PaymentMethod
+  receivedAt     DateTime      @default(now()) @map("received_at")
+  cashClosingId  String?       @map("cash_closing_id")
+  cashClosing    CashClosing?  @relation(fields: [cashClosingId], references: [id])
+  actorUserId    String?       @map("actor_user_id")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  allocations PaymentAllocation[]
+  refunds     Refund[]
+
+  @@index([organizationId, receivedAt])
+  @@map("payments")
+}
+
+model PaymentAllocation {
+  id        String   @id @default(uuid())
+  paymentId String   @map("payment_id")
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  chargeId  String   @map("charge_id")
+  charge    Charge   @relation(fields: [chargeId], references: [id])
+  amount    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([paymentId, chargeId])
+  @@map("payment_allocations")
+}
+
+/// amount puede ser negativo (descuento) o positivo (correccion al alza).
+/// Nunca se edita Charge.amount directamente (Seccion 11 de CLAUDE.md).
+model Adjustment {
+  id          String   @id @default(uuid())
+  chargeId    String   @map("charge_id")
+  charge      Charge   @relation(fields: [chargeId], references: [id])
+  amount      Decimal  @db.Decimal(10, 2)
+  reason      String
+  actorUserId String   @map("actor_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("adjustments")
+}
+
+model Refund {
+  id          String   @id @default(uuid())
+  paymentId   String   @map("payment_id")
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+  amount      Decimal  @db.Decimal(10, 2)
+  reason      String
+  actorUserId String   @map("actor_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("refunds")
+}
+
+/// El saldo restante se calcula siempre sumando movimientos, nunca es un
+/// campo editable (Seccion 11 de CLAUDE.md). El consumo por asistencia real
+/// llega en M4; en M3 el consumo es manual (ver plan de M3).
+model PackageCredit {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  studentId      String       @map("student_id")
+  student        Student      @relation(fields: [studentId], references: [id])
+  chargeId       String       @unique @map("charge_id")
+  charge         Charge       @relation(fields: [chargeId], references: [id])
+  enrollmentId   String?      @map("enrollment_id")
+  enrollment     Enrollment?  @relation(fields: [enrollmentId], references: [id])
+  totalUnits     Int          @map("total_units")
+  validFrom      DateTime     @map("valid_from")
+  validUntil     DateTime     @map("valid_until")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  movements PackageCreditMovement[]
+
+  @@map("package_credits")
+}
+
+model PackageCreditMovement {
+  id              String        @id @default(uuid())
+  packageCreditId String        @map("package_credit_id")
+  packageCredit   PackageCredit @relation(fields: [packageCreditId], references: [id], onDelete: Cascade)
+  delta           Int
+  reason          String
+  sessionId       String?       @map("session_id")
+  session         ClassSession? @relation(fields: [sessionId], references: [id])
+  actorUserId     String        @map("actor_user_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@map("package_credit_movements")
+}
+
+/// Cierra los Payment con cashClosingId nulo al momento de correr (Seccion
+/// 12: "los reportes se calculan desde movimientos, no desde totales
+/// manuales"). Los totales aqui son un resumen inmutable de ese cierre, no
+/// se recalculan despues.
+model CashClosing {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  openedAt       DateTime     @map("opened_at")
+  closedAt       DateTime     @default(now()) @map("closed_at")
+  totalCash      Decimal      @default(0) @db.Decimal(10, 2) @map("total_cash")
+  totalTransfer  Decimal      @default(0) @db.Decimal(10, 2) @map("total_transfer")
+  totalCard      Decimal      @default(0) @db.Decimal(10, 2) @map("total_card")
+  totalOther     Decimal      @default(0) @db.Decimal(10, 2) @map("total_other")
+  actorUserId    String       @map("actor_user_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  payments Payment[]
+
+  @@map("cash_closings")
+}
+
+// ---------------------------------------------------------------------------
+// M4 - Avisos de inasistencia (version simplificada: solo registrar que un
+// alumno no ira porque el familiar aviso. Default: todos PRESENT. Se puede
+// revertir. Historial con auditor y timestamp (plan de M4).
+// ---------------------------------------------------------------------------
+
+/// Default: todos en PRESENT. Se cambia a ABSENT_JUSTIFIED cuando el familiar
+/// avisa. Se puede revertir. Cada cambio se audita (actor, timestamp).
+model Attendance {
+  id        String             @id @default(uuid())
+  sessionId String             @map("session_id")
+  session   ClassSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId String             @map("student_id")
+  student   Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status    AttendanceStatus   @default(PRESENT)
+  notes     String?
+  actorUserId String?          @map("actor_user_id")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@map("attendances")
+}

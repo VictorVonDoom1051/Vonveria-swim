@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vonveria-swim-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vonveria
+      POSTGRES_PASSWORD: vonveria_dev_password
+      POSTGRES_DB: vonveria_swim
+    ports:
+      # 5433 en el host (no 5432) para no chocar con otros Postgres locales,
+      # p. ej. el de VonverIA-Web en la misma maquina de desarrollo.
+      - "5433:5432"
+    volumes:
+      - vonveria_swim_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vonveria -d vonveria_swim"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  vonveria_swim_postgres_data:

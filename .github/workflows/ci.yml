@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vonveria
+          POSTGRES_PASSWORD: vonveria_ci_password
+          POSTGRES_DB: vonveria_swim_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vonveria -d vonveria_swim_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: "postgresql://vonveria:vonveria_ci_password@localhost:5432/vonveria_swim_ci?schema=public"
+      NODE_ENV: "test"
+      TZ: "America/Mexico_City"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @vonveria-swim/database prisma:generate
+
+      - name: Apply database migrations
+        run: pnpm --filter @vonveria-swim/database prisma:deploy
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
