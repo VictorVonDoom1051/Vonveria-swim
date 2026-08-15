@@ -28,7 +28,9 @@ RUN pnpm --filter @vonveria-swim/database exec prisma generate
 # Next.js incrusta las variables NEXT_PUBLIC_* en tiempo de compilacion,
 # por eso la URL de la API tiene que llegar como build arg y no solo en runtime.
 ARG SERVICE=web
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+# Ruta relativa por defecto: el navegador siempre habla con el dominio de la web
+# y next.config.mjs la reenvia a la API, para que las cookies sean de un solo origen.
+ARG NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # api y worker se ejecutan con tsx y no requieren paso de compilacion.

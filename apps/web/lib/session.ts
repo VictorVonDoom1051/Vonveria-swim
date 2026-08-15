@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Capability } from "@vonveria-swim/permissions";
-import { API_URL, SESSION_COOKIE_NAME } from "./constants";
+import { API_SERVER_URL, SESSION_COOKIE_NAME } from "./constants";
 
 export type RoleKey = "DIRECCION" | "RECEPCION" | "INSTRUCTOR";
 
@@ -22,7 +22,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     return null;
   }
 
-  const response = await fetch(`${API_URL}/auth/me`, {
+  const response = await fetch(`${API_SERVER_URL}/auth/me`, {
     headers: { Cookie: `${SESSION_COOKIE_NAME}=${token}` },
     cache: "no-store",
   });
@@ -70,7 +70,7 @@ export async function serverFetch<T>(path: string): Promise<T | null> {
     return null;
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${API_SERVER_URL}${path}`, {
     headers: { Cookie: `${SESSION_COOKIE_NAME}=${token}` },
     cache: "no-store",
   });
