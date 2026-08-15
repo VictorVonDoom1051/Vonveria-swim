@@ -135,7 +135,7 @@ After successful deployment:
 2. Visit: `https://vonveria-swim-web-<random>.railway.app`
 3. Login with:
    - **Admin:** `sistemas@vonveria.mx` / `12345678acs`
-   - **Instructor:** `instructor@vonveria.mx` / `instructor123`
+   - **Instructor:** `instructor@vonveria.mx` / `12345678acs`
 
 ### Desktop (QA Testing)
 - Visit same URL from laptop browser

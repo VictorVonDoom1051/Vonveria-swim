@@ -153,7 +153,7 @@ curl https://vonveria-swim-web-<random>.railway.app
 2. Visit: `https://vonveria-swim-web-<random>.railway.app`
 3. Login:
    - **Admin:** sistemas@vonveria.mx / 12345678acs
-   - **Instructor:** instructor@vonveria.mx / instructor123
+   - **Instructor:** instructor@vonveria.mx / 12345678acs
 
 ---
 

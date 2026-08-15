@@ -149,7 +149,9 @@ async function seedInstructorWithTodayClasses(
   organizationId: string,
   instructorRoleId: string,
 ): Promise<void> {
-  const passwordHash = await hashPassword("instructor123");
+  // Usuario de la escuela piloto simulada, no un secreto real. Se deja
+  // configurable por si un despliegue quiere una distinta.
+  const passwordHash = await hashPassword(process.env.INSTRUCTOR_PASSWORD ?? "12345678acs");
 
   const instructor = await prisma.user.upsert({
     where: { organizationId_email: { organizationId, email: "instructor@vonveria.mx" } },
@@ -320,7 +322,7 @@ async function main(): Promise<void> {
   console.log(`Organizacion piloto: ${organization.name} (${organization.id})`);
   console.log("\n📚 Usuarios creados:");
   console.log("  - Admin (Dirección): sistemas@vonveria.mx / 12345678acs");
-  console.log("  - Instructor: instructor@vonveria.mx / instructor123");
+  console.log("  - Instructor: instructor@vonveria.mx / 12345678acs");
 }
 
 main()

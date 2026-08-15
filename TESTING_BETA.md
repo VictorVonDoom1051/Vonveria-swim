@@ -17,7 +17,7 @@
 
 #### Instructor — Class View Only
 - **Email:** `instructor@vonveria.mx`
-- **Password:** `instructor123`
+- **Password:** `12345678acs`
 - **Role:** Instructor (Maestra Andrea)
 - **Access:** View today's classes, student roster, record attendance
 
@@ -29,7 +29,7 @@
 **Objective:** Verify instructor can see their assigned classes and students
 
 **Steps:**
-1. Login as `instructor@vonveria.mx` / `instructor123`
+1. Login as `instructor@vonveria.mx` / `12345678acs`
 2. You should see "Hola, Maestra Andrea" greeting
 3. Class "Clase 9-10AM" should appear (next Monday 09:00-10:00)
 4. Three students listed: Juan García, María García, Carlos García

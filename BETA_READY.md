@@ -67,7 +67,7 @@ Dirección (Full Admin):
 
 Instructor (Read-Only):
   Email: instructor@vonveria.mx
-  Password: instructor123
+  Password: 12345678acs
 ```
 
 ### 4. Test Scenarios
