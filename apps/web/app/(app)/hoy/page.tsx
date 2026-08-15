@@ -1,6 +1,7 @@
 import { Card } from "@vonveria-swim/ui";
+import { CAPABILITIES } from "@vonveria-swim/permissions";
 import { requireUser, serverFetch } from "../../../lib/session";
-import { SessionAttendance } from "./session-attendance";
+import { SessionAttendance } from "../session-attendance";
 
 interface TodaySession {
   id: string;
@@ -18,7 +19,7 @@ interface TodaySession {
 export default async function HoyPage() {
   const user = await requireUser();
   const sessions = (await serverFetch<TodaySession[]>("/scheduling/sessions/today")) ?? [];
-  const isInstructor = user.roleKeys.length === 1 && user.roleKeys[0] === "INSTRUCTOR";
+  const canMark = user.capabilities.includes(CAPABILITIES.BILLING_MANAGE);
 
   return (
     <div className="flex flex-col gap-4">
@@ -29,7 +30,7 @@ export default async function HoyPage() {
       {sessions.length === 0 ? (
         <Card className="max-w-xl">
           <p className="text-sm text-text-secondary">
-            No tienes clases asignadas hoy. La toma de asistencia llega en M4.
+            No tienes clases asignadas en los proximos dias.
           </p>
         </Card>
       ) : (
@@ -54,7 +55,7 @@ export default async function HoyPage() {
               <SessionAttendance
                 sessionId={session.id}
                 enrollments={session.group.enrollments}
-                isInstructor={isInstructor}
+                canMark={canMark}
               />
             </Card>
           ))}

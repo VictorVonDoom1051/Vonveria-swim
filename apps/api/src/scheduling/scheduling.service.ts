@@ -129,6 +129,39 @@ export class SchedulingService {
   }
 
   /** Sesiones de hoy y próximos 7 días para un instructor (sin capacidad especial: cada quien ve lo suyo). */
+  /**
+   * Sesiones proximas de toda la escuela. Es lo que consulta Recepcion y
+   * Direccion en /asistencia, donde marcan el aviso de falta: a diferencia de
+   * listTodaySessionsForInstructor no se filtra por instructor.
+   */
+  listUpcomingSessionsForOrganization(organizationId: string) {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfDay);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+    return this.prisma.client.classSession.findMany({
+      where: {
+        startsAt: { gte: startOfDay, lt: endOfWeek },
+        group: { organizationId },
+      },
+      include: {
+        group: {
+          include: {
+            program: true,
+            level: true,
+            instructor: { select: { id: true, fullName: true } },
+            enrollments: {
+              where: { status: "ACTIVE" },
+              include: { student: { select: { id: true, fullName: true } } },
+            },
+          },
+        },
+      },
+      orderBy: { startsAt: "asc" },
+    });
+  }
+
   listTodaySessionsForInstructor(instructorId: string) {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);

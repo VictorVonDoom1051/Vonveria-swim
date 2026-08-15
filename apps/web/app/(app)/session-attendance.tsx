@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { apiFetch } from "../../../lib/api-client";
+import { useCallback, useEffect, useState } from "react";
 import { Modal } from "@vonveria-swim/ui";
+import { apiFetch } from "../../lib/api-client";
 
 interface Enrollment {
   id: string;
@@ -22,7 +22,7 @@ function PersonIcon({ absent }: { absent: boolean }) {
       width="32"
       height="32"
       viewBox="0 0 24 24"
-      fill={absent ? "currentColor" : "currentColor"}
+      fill="currentColor"
       stroke="none"
       className={absent ? "text-status-error" : "text-status-success"}
       aria-hidden="true"
@@ -33,47 +33,50 @@ function PersonIcon({ absent }: { absent: boolean }) {
   );
 }
 
+/**
+ * Lista de alumnos de una sesion con su aviso de falta.
+ *
+ * canMark refleja la capacidad billing:manage que exige el backend. Cuando es
+ * false los iconos se ven igual pero no se pueden tocar: el instructor consulta
+ * su lista, Recepcion y Direccion registran el aviso del familiar.
+ */
 export function SessionAttendance({
   sessionId,
   enrollments,
-  isInstructor,
+  canMark,
 }: {
   sessionId: string;
   enrollments: Enrollment[];
-  isInstructor: boolean;
+  canMark: boolean;
 }) {
   const [attendance, setAttendance] = useState<AttendanceStatus>({});
   const [loading, setLoading] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
-  async function loadAttendance() {
-    if (loading) return;
+  const loadAttendance = useCallback(async () => {
     setLoading(true);
     try {
       const data = await apiFetch<
-        Array<{
-          studentId: string;
-          status: "PRESENT" | "ABSENT_JUSTIFIED";
-          notes: string | null;
-        }>
+        Array<{ studentId: string; status: "PRESENT" | "ABSENT_JUSTIFIED"; notes: string | null }>
       >(`/attendance/${sessionId}/attendance`);
       const map: AttendanceStatus = {};
       for (const record of data) {
-        map[record.studentId] = {
-          status: record.status,
-          notes: record.notes,
-        };
+        map[record.studentId] = { status: record.status, notes: record.notes };
       }
       setAttendance(map);
     } finally {
       setLoading(false);
     }
-  }
+  }, [sessionId]);
+
+  // Sin esto una falta ya registrada se veria verde hasta recargar a mano.
+  useEffect(() => {
+    void loadAttendance();
+  }, [loadAttendance]);
 
   async function toggleAbsent(studentId: string, notesText?: string) {
-    const current = attendance[studentId];
-    const isAbsent = current?.status === "ABSENT_JUSTIFIED";
+    const isAbsent = attendance[studentId]?.status === "ABSENT_JUSTIFIED";
 
     try {
       if (isAbsent) {
@@ -90,10 +93,7 @@ export function SessionAttendance({
         });
         setAttendance({
           ...attendance,
-          [studentId]: {
-            status: "ABSENT_JUSTIFIED",
-            notes: notesText || null,
-          },
+          [studentId]: { status: "ABSENT_JUSTIFIED", notes: notesText || null },
         });
       }
       setSelectedStudentId(null);
@@ -103,20 +103,29 @@ export function SessionAttendance({
     }
   }
 
+  const absentCount = Object.values(attendance).filter(
+    (record) => record.status === "ABSENT_JUSTIFIED",
+  ).length;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-text-primary">Asistencia</h3>
-        {!isInstructor && (
-          <button
-            type="button"
-            onClick={() => void loadAttendance()}
-            disabled={loading}
-            className="text-xs text-brand-deep hover:underline"
-          >
-            {loading ? "Cargando..." : "Recargar"}
-          </button>
-        )}
+        <h3 className="text-sm font-semibold text-text-primary">
+          Asistencia
+          {absentCount > 0 && (
+            <span className="ml-2 font-normal text-status-error">
+              {absentCount} {absentCount === 1 ? "ausente" : "ausentes"}
+            </span>
+          )}
+        </h3>
+        <button
+          type="button"
+          onClick={() => void loadAttendance()}
+          disabled={loading}
+          className="text-xs text-brand-deep hover:underline"
+        >
+          {loading ? "Cargando..." : "Recargar"}
+        </button>
       </div>
 
       {enrollments.length === 0 ? (
@@ -124,20 +133,27 @@ export function SessionAttendance({
       ) : (
         <div className="flex flex-wrap gap-4">
           {enrollments.map((enrollment) => {
-            const isAbsent = attendance[enrollment.student.id]?.status === "ABSENT_JUSTIFIED";
+            const record = attendance[enrollment.student.id];
+            const isAbsent = record?.status === "ABSENT_JUSTIFIED";
             return (
               <button
                 key={enrollment.student.id}
                 type="button"
                 onClick={() => {
-                  if (!isInstructor) {
+                  if (canMark) {
                     setSelectedStudentId(enrollment.student.id);
-                    setNotes(attendance[enrollment.student.id]?.notes || "");
+                    setNotes(record?.notes ?? "");
                   }
                 }}
-                disabled={isInstructor}
-                className="flex flex-col items-center gap-1 rounded-lg p-2 hover:bg-bg-base disabled:cursor-default"
-                title={isInstructor ? "Solo Recepción y Dirección pueden marcar" : ""}
+                disabled={!canMark}
+                className="flex min-w-20 flex-col items-center gap-1 rounded-lg p-2 hover:bg-bg-base disabled:cursor-default"
+                title={
+                  canMark
+                    ? isAbsent
+                      ? `Ausente${record?.notes ? `: ${record.notes}` : ""}`
+                      : "Marcar que no asistira"
+                    : "Solo Recepción y Dirección pueden marcar"
+                }
               >
                 <PersonIcon absent={isAbsent} />
                 <span className="text-xs text-text-primary">{enrollment.student.fullName}</span>
@@ -165,7 +181,8 @@ export function SessionAttendance({
               }}
               className="rounded-md bg-status-error px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
-              {attendance[selectedStudentId!]?.status === "ABSENT_JUSTIFIED"
+              {selectedStudentId &&
+              attendance[selectedStudentId]?.status === "ABSENT_JUSTIFIED"
                 ? "Revertir"
                 : "Marcar ausente"}
             </button>
@@ -184,7 +201,7 @@ export function SessionAttendance({
       >
         <div className="flex flex-col gap-3">
           <textarea
-            placeholder="Nota (opcional)"
+            placeholder="Motivo del aviso del familiar (opcional)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="rounded-md border border-border-subtle px-3 py-2 text-sm"

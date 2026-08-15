@@ -40,4 +40,10 @@ export class SchedulingController {
   listTodaySessions(@CurrentUser() user: AuthenticatedUser) {
     return this.schedulingService.listTodaySessionsForInstructor(user.id);
   }
+
+  @RequireCapability(CAPABILITIES.SCHEDULING_MANAGE)
+  @Get("sessions/upcoming")
+  listUpcomingSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.schedulingService.listUpcomingSessionsForOrganization(user.organizationId);
+  }
 }

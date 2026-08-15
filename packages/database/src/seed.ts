@@ -6,7 +6,7 @@ import {
   DEFAULT_TIMEZONE,
 } from "@vonveria-swim/configuration";
 import { CAPABILITIES, CAPABILITY_CATALOG } from "@vonveria-swim/permissions";
-import { RoleKey, getPrismaClient, type PrismaClient } from "./index";
+import { RoleKey, WeekDay, getPrismaClient, type PrismaClient } from "./index";
 
 const PILOT_ORGANIZATION_NAME = "Escuela Piloto VonverIA Swim";
 
@@ -244,7 +244,13 @@ async function seedInstructorWithTodayClasses(
   });
 
   // Crear schedule rule (lunes a viernes 9-10 AM)
-  const weekDays = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
+  const weekDays = [
+    WeekDay.MONDAY,
+    WeekDay.TUESDAY,
+    WeekDay.WEDNESDAY,
+    WeekDay.THURSDAY,
+    WeekDay.FRIDAY,
+  ];
   for (const weekDay of weekDays) {
     await prisma.scheduleRule.upsert({
       where: {
@@ -254,7 +260,7 @@ async function seedInstructorWithTodayClasses(
       create: {
         id: `rule-${group.id}-${weekDay}`,
         groupId: group.id,
-        weekDay: weekDay as any,
+        weekDay,
         startTime: "09:00",
         durationMinutes: 60,
       },
