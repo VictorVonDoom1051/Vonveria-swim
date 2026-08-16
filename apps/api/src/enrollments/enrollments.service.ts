@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma, type BillingModality } from "@vonveria-swim/database";
+import { Prisma, type BillingModality, type EnrollmentStatus } from "@vonveria-swim/database";
 import {
   ANNUAL_PERIOD_MONTH,
   resolveAnnualPeriod,
@@ -354,6 +354,15 @@ export class EnrollmentsService {
       params.monthlyRateAmount !== undefined &&
       params.monthlyDueDay !== undefined;
 
+    // Al inscribir en otro grupo del mismo period, marca la inscripcion anterior como TRANSFERRED.
+    await this.autoTransferPreviousEnrollment(
+      tx,
+      params.studentId,
+      params.groupId,
+      params.organizationId,
+      params.startDate,
+    );
+
     const created = await tx.enrollment.create({
       data: {
         organizationId: params.organizationId,
@@ -405,5 +414,127 @@ export class EnrollmentsService {
     }
 
     return created;
+  }
+
+  /**
+   * Cambia el estado de una inscripción (baja, pausa, cambio de grupo).
+   * Registra el cambio en EnrollmentStatusHistory.
+   * Audita automáticamente.
+   *
+   * Transiciones permitidas:
+   * - ACTIVE → CANCELLED, TRANSFERRED, FROZEN
+   * - FROZEN → ACTIVE (reactivación)
+   * - Ninguna otra transición es permitida
+   */
+  async updateEnrollmentStatus(
+    organizationId: string,
+    enrollmentId: string,
+    toStatus: string,
+    reason: string,
+    description: string | undefined,
+    actorUserId: string,
+  ) {
+    const validTransitions: Record<string, string[]> = {
+      ACTIVE: ["CANCELLED", "TRANSFERRED", "FROZEN"],
+      FROZEN: ["ACTIVE"],
+    };
+
+    const enrollment = await this.prisma.client.enrollment.findUniqueOrThrow({
+      where: { id: enrollmentId },
+      select: {
+        organizationId: true,
+        status: true,
+        studentId: true,
+        groupId: true,
+      },
+    });
+
+    if (enrollment.organizationId !== organizationId) {
+      throw new BadRequestException("Enrollment does not belong to this organization");
+    }
+
+    if (!validTransitions[enrollment.status]?.includes(toStatus)) {
+      throw new BadRequestException(
+        `Invalid transition from ${enrollment.status} to ${toStatus}`,
+      );
+    }
+
+    const updated = await this.prisma.client.$transaction(async (tx) => {
+      const result = await tx.enrollment.update({
+        where: { id: enrollmentId },
+        data: { status: toStatus as EnrollmentStatus },
+        include: {
+          student: { select: { fullName: true } },
+          group: { select: { name: true } },
+        },
+      });
+
+      await tx.enrollmentStatusHistory.create({
+        data: {
+          enrollmentId,
+          fromStatus: enrollment.status as EnrollmentStatus,
+          toStatus: toStatus as EnrollmentStatus,
+          reason,
+          actorUserId,
+        },
+      });
+
+      return result;
+    });
+
+    await this.audit.record({
+      action: "enrollment_status_changed",
+      organizationId,
+      actorUserId,
+      entityType: "Enrollment",
+      entityId: enrollmentId,
+      metadata: {
+        previousStatus: enrollment.status,
+        newStatus: toStatus,
+        reason,
+        description,
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Al crear una nueva inscripción para un alumno que ya está inscrito en otro
+   * grupo del mismo periodo, marca la inscripción anterior como TRANSFERRED
+   * automáticamente.
+   */
+  async autoTransferPreviousEnrollment(
+    tx: TransactionClient,
+    studentId: string,
+    groupId: string,
+    organizationId: string,
+    newEnrollmentStartDate: Date,
+  ) {
+    const previousActive = await tx.enrollment.findFirst({
+      where: {
+        studentId,
+        organizationId,
+        status: "ACTIVE",
+        groupId: { not: groupId },
+      },
+      select: { id: true, startDate: true },
+    });
+
+    if (previousActive && previousActive.startDate.getTime() === newEnrollmentStartDate.getTime()) {
+      await tx.enrollmentStatusHistory.create({
+        data: {
+          enrollmentId: previousActive.id,
+          fromStatus: "ACTIVE",
+          toStatus: "TRANSFERRED",
+          reason: "auto-transferred-on-new-enrollment",
+        },
+      });
+
+      await tx.enrollment.update({
+        where: { id: previousActive.id },
+        data: { status: "TRANSFERRED" },
+      });
+    }
   }
 }

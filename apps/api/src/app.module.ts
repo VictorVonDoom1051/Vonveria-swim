@@ -22,12 +22,14 @@ import { AssessmentsModule } from "./assessments/assessments.module";
 import { AuthGuard } from "./identity/guards/auth.guard";
 import { CapabilityGuard } from "./identity/guards/capability.guard";
 import { CsrfMiddleware } from "./common/csrf.middleware";
+import { ThrottleModule } from "./common/throttle.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottleModule,
     PrismaModule,
     HealthModule,
     AuditModule,

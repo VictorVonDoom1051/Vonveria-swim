@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Inject, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query } from "@nestjs/common";
 import { CAPABILITIES } from "@vonveria-swim/permissions";
 import { EnrollmentsService } from "./enrollments.service";
 import { CreateEnrollmentDto } from "./dto/create-enrollment.dto";
 import { EnrollWizardDto } from "./dto/enroll-wizard.dto";
+import { UpdateEnrollmentStatusDto } from "./dto/update-enrollment-status.dto";
 import { RequireCapability } from "../identity/decorators/require-capability.decorator";
 import { CurrentUser } from "../identity/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "../identity/types";
@@ -45,5 +46,22 @@ export class EnrollmentsController {
   @Post("wizard")
   wizard(@CurrentUser() user: AuthenticatedUser, @Body() dto: EnrollWizardDto) {
     return this.enrollmentsService.enrollFromWizard(user.organizationId, user.id, dto);
+  }
+
+  /** Cambiar estado: baja (CANCELLED), pausa (FROZEN), cambio de grupo (TRANSFERRED). */
+  @Patch(":id/status")
+  updateStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") enrollmentId: string,
+    @Body() dto: UpdateEnrollmentStatusDto,
+  ) {
+    return this.enrollmentsService.updateEnrollmentStatus(
+      user.organizationId,
+      enrollmentId,
+      dto.toStatus,
+      dto.reason,
+      dto.description,
+      user.id,
+    );
   }
 }

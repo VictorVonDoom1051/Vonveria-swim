@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button, Card } from "@vonveria-swim/ui";
 import { apiFetch } from "../../lib/api-client";
 
@@ -63,6 +64,11 @@ export default function LoginPage() {
             {loading ? "Entrando..." : "Entrar"}
           </Button>
         </form>
+        <div className="mt-4 text-center">
+          <Link href="/auth/forgot-password" className="text-sm text-brand-turquoise hover:underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
       </Card>
     </main>
   );

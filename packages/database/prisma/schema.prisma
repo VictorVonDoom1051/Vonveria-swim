@@ -84,9 +84,8 @@ model BrandingSettings {
   @@map("branding_settings")
 }
 
-/// El "reset" de contrasena en M1 lo hace Direccion desde el panel de
-/// usuarios (sin correo real todavia, ver docs/decisions). No hay tabla
-/// de tokens de recuperacion por eso.
+/// En M1, admin hace reset desde el panel de usuarios. En fases posteriores,
+/// los usuarios pueden auto-resetear usando PasswordResetToken con enlace por email.
 model User {
   id             String     @id @default(uuid())
   organizationId String     @map("organization_id")
@@ -101,6 +100,7 @@ model User {
 
   roles          UserRole[]
   sessions       Session[]
+  passwordResetTokens PasswordResetToken[]
   auditLogsAsActor AuditLog[] @relation("AuditLogActor")
   instructedGroups Group[]   @relation("GroupInstructor")
   assessmentsAsEvaluator Assessment[] @relation("AssessmentEvaluator")
@@ -173,6 +173,22 @@ model Session {
   ipAddress String?  @map("ip_address")
 
   @@map("sessions")
+}
+
+/// Token para reset de contraseña autogestionado. El usuario recibe un enlace
+/// por email con el token (en claro). En la BD se guarda solo el hash del token.
+/// Expira en 24 horas y puede usarse una sola vez.
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model AuditLog {
@@ -453,6 +469,7 @@ model Enrollment {
   charges        Charge[]
   packageCredits PackageCredit[]
 
+  @@index([organizationId, status])
   @@map("enrollments")
 }
 
