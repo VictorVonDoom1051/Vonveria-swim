@@ -87,13 +87,36 @@ NEXT_PUBLIC_API_URL=https://<api-domain>.railway.app
 
 ### API Service (`vonveria-swim-api`)
 
+> ⚠️ **Nunca escribas una contraseña real en este archivo ni en ningún archivo
+> versionado.** Los valores de abajo son marcadores: se generan por ambiente y se
+> capturan directamente en la UI de Railway (Variables), que es el único lugar
+> donde deben existir. Ver `docs/decisions/0004-security-baseline.md`.
+
 ```
 NODE_ENV=production
+TZ=America/Mexico_City
 DATABASE_URL=$DATABASE_URL  # Auto-provided by PostgreSQL plugin
-JWT_SECRET=<generate-random-secret>
+API_CORS_ORIGIN=https://<web-domain>.railway.app
 ADMIN_EMAIL=sistemas@vonveria.mx
-ADMIN_PASSWORD=12345678acs
+ADMIN_PASSWORD=<GENERAR_POR_AMBIENTE>
+
+# Recuperacion de contrasena por correo (ver Step 4b)
+MAILER_HOST=<smtp-host>
+MAILER_PORT=587
+MAILER_USER=<smtp-user>
+MAILER_PASS=<smtp-pass>
+MAILER_FROM=noreply@vonveria.mx
+FRONTEND_URL=https://<web-domain>.railway.app
 ```
+
+Generar `ADMIN_PASSWORD` (una distinta por ambiente):
+
+```bash
+openssl rand -base64 24 | tr -d '=' | head -c 32
+```
+
+Si este proyecto se desplegó antes con la contraseña de ejemplo que traía esta
+guía, **cámbiala en Railway y vuelve a sembrar antes de cargar datos reales.**
 
 ### PostgreSQL Plugin
 

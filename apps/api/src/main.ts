@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { NestFactory } from "@nestjs/core";
 import { Logger, ValidationPipe } from "@nestjs/common";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 
@@ -16,9 +17,15 @@ if (existsSync(rootEnvPath)) {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ["log", "warn", "error"],
   });
+
+  // Railway (y cualquier PaaS) sirve detras de un reverse proxy. Sin esto,
+  // req.ip es la IP del proxy en TODAS las peticiones y el rate limiting
+  // global agrupa a toda la organizacion en una sola cubeta. El valor 1
+  // confia en un solo salto: usar `true` permitiria falsificar X-Forwarded-For.
+  app.set("trust proxy", 1);
 
   const corsOrigin = process.env.API_CORS_ORIGIN ?? "http://localhost:3100";
   app.enableCors({ origin: corsOrigin, credentials: true });
