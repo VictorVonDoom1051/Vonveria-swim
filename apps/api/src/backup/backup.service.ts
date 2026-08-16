@@ -22,6 +22,7 @@ export class BackupService {
     const [
       organization,
       branding,
+      permissions,
       roles,
       users,
       families,
@@ -49,9 +50,14 @@ export class BackupService {
       stockMovements,
       sales,
       saleLines,
+      assessments,
     ] = await Promise.all([
       client.organization.findUnique({ where: { id: organizationId } }),
       client.brandingSettings.findUnique({ where: { organizationId } }),
+      // Catalogo global, no por organizacion. Sin el, los RolePermission del
+      // archivo apuntarian a ids inexistentes al restaurar en otra base y la
+      // escuela quedaria sin capacidades: nadie podria hacer nada al entrar.
+      client.permission.findMany({ orderBy: { key: "asc" } }),
       client.role.findMany({ where: byOrg, include: { permissions: true } }),
       client.user.findMany({
         where: byOrg,
@@ -92,6 +98,7 @@ export class BackupService {
       client.stockMovement.findMany({ where: { product: { organizationId } } }),
       client.sale.findMany({ where: byOrg }),
       client.saleLine.findMany({ where: { sale: { organizationId } } }),
+      client.assessment.findMany({ where: byOrg }),
     ]);
 
     return {
@@ -99,13 +106,16 @@ export class BackupService {
         exportedAt: new Date().toISOString(),
         organizationId,
         organizationName: organization?.name ?? null,
-        formatVersion: 1,
+        // 2 agrega el catalogo de permisos, sin el cual la restauracion dejaba
+        // los roles sin capacidades.
+        formatVersion: 2,
         aviso:
           "Este respaldo NO incluye contrasenas. Al restaurarlo hay que fijar " +
           "contrasenas nuevas para cada usuario.",
       },
       organization,
       branding,
+      permissions,
       roles,
       users,
       families,
@@ -133,6 +143,7 @@ export class BackupService {
       stockMovements,
       sales,
       saleLines,
+      assessments,
     };
   }
 

@@ -22,7 +22,8 @@
     "db:deploy": "dotenv -e .env -- pnpm --filter @vonveria-swim/database prisma:deploy",
     "db:studio": "dotenv -e .env -- pnpm --filter @vonveria-swim/database prisma:studio",
     "db:seed": "dotenv -e .env -- pnpm --filter @vonveria-swim/database seed",
-    "railway:migrate-seed": "pnpm --filter @vonveria-swim/database exec prisma migrate deploy && pnpm --filter @vonveria-swim/database run seed"
+    "railway:migrate-seed": "pnpm --filter @vonveria-swim/database exec prisma migrate deploy && pnpm --filter @vonveria-swim/database run seed",
+    "db:import": "dotenv -e .env -- pnpm --filter @vonveria-swim/database import"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.0",
