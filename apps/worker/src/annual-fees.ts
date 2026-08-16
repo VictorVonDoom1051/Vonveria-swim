@@ -38,7 +38,7 @@ export async function runAnnualFeeGeneration(
     // Por alumno y por año, no por inscripcion: un alumno en dos grupos la
     // paga una sola vez. La restriccion unica de `charges` es por inscripcion,
     // asi que sola no alcanza; sigue cubriendo la carrera entre dos corridas.
-    const yaCobrada = await prisma.charge.findFirst({
+    const alreadyCharged = await prisma.charge.findFirst({
       where: {
         studentId: enrollment.studentId,
         type: "ANNUAL_FEE",
@@ -46,7 +46,7 @@ export async function runAnnualFeeGeneration(
       },
       select: { id: true },
     });
-    if (yaCobrada) {
+    if (alreadyCharged) {
       continue;
     }
 

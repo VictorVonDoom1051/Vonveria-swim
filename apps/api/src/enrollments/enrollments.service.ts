@@ -98,12 +98,12 @@ export class EnrollmentsService {
     // La anualidad es por alumno y por año, no por inscripcion: un alumno con
     // dos grupos activos (o que se cambia de nivel) la paga una sola vez. La
     // restriccion unica de Charge es por inscripcion, asi que no basta.
-    const anualidadDelAño = await tx.charge.findFirst({
+    const annualAlreadyCharged = await tx.charge.findFirst({
       where: { studentId: params.studentId, type: "ANNUAL_FEE", periodYear: period.periodYear },
       select: { id: true },
     });
 
-    if (!anualidadDelAño) {
+    if (!annualAlreadyCharged) {
       await tx.charge.create({
         data: {
           organizationId: params.organizationId,
@@ -120,8 +120,8 @@ export class EnrollmentsService {
     }
 
     if (params.enrollmentFeeAmount) {
-      const yaPago = await this.hasEverPaidEnrollmentFee(tx, params.studentId);
-      if (!yaPago) {
+      const alreadyPaid = await this.hasEverPaidEnrollmentFee(tx, params.studentId);
+      if (!alreadyPaid) {
         await tx.charge.create({
           data: {
             organizationId: params.organizationId,
