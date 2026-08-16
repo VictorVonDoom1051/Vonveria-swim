@@ -279,16 +279,53 @@ async function seedInstructorWithTodayClasses(
     create: { organizationId, name: "Sucursal Principal" },
   });
 
-  const pool = await prisma.pool.upsert({
+  // La alberca original se llamaba "Alberca Principal". Se renombra en vez de
+  // crear una nueva para conservar el id: en produccion ya hay grupos y sesiones
+  // apuntando a ella, y una alberca nueva dejaria huerfana a la anterior.
+  const legacyPool = await prisma.pool.findUnique({
     where: { branchId_name: { branchId: branch.id, name: "Alberca Principal" } },
+  });
+  if (legacyPool) {
+    await prisma.pool.update({
+      where: { id: legacyPool.id },
+      data: { name: "Alberca Grande" },
+    });
+  }
+
+  const pool = await prisma.pool.upsert({
+    where: { branchId_name: { branchId: branch.id, name: "Alberca Grande" } },
     update: {},
-    create: { branchId: branch.id, name: "Alberca Principal" },
+    create: { branchId: branch.id, name: "Alberca Grande" },
   });
 
-  // Crear grupo para la maestra
+  const lanes = [];
+  for (const laneName of ["Carril 1", "Carril 2"]) {
+    lanes.push(
+      await prisma.lane.upsert({
+        where: { poolId_name: { poolId: pool.id, name: laneName } },
+        update: {},
+        create: { poolId: pool.id, name: laneName },
+      }),
+    );
+  }
+
+  // Alberca chica para clases personalizadas: sin carriles, se ocupa entera.
+  await prisma.pool.upsert({
+    where: { branchId_name: { branchId: branch.id, name: "Alberca Chica" } },
+    update: {},
+    create: { branchId: branch.id, name: "Alberca Chica" },
+  });
+
+  // Crear grupo para la maestra, en el primer carril de la alberca grande para
+  // que el mapa del panel de inicio muestre ocupacion real.
+  const firstLane = lanes[0];
   const group = await prisma.group.upsert({
     where: { id: "group-maestra-andrea" },
-    update: { instructorId: instructor.id },
+    update: {
+      instructorId: instructor.id,
+      poolId: pool.id,
+      ...(firstLane ? { laneId: firstLane.id } : {}),
+    },
     create: {
       id: "group-maestra-andrea",
       organizationId,
@@ -297,6 +334,7 @@ async function seedInstructorWithTodayClasses(
       levelId: level.id,
       branchId: branch.id,
       poolId: pool.id,
+      ...(firstLane ? { laneId: firstLane.id } : {}),
       capacity: 10,
       isPublished: true,
       instructorId: instructor.id,

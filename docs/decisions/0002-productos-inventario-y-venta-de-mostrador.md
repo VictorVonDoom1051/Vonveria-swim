@@ -86,6 +86,6 @@ Recepción, la que permite mover valor sin contraparte queda en Dirección.
 
 ## Pendiente
 
-"Tienda" vive bajo *Más* en la navegación, porque la Sección 5 fija seis
+"Tienda" vive bajo _Más_ en la navegación, porque la Sección 5 fija seis
 secciones principales y no hay lugar libre. Si la beta muestra que la venta de
 mostrador es lo bastante frecuente, conviene promoverla y actualizar esa sección.
