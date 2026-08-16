@@ -75,6 +75,7 @@ describe("EnrollmentsService.createEnrollment", () => {
   });
 
   afterAll(async () => {
+    await prisma.client.charge.deleteMany({ where: { organizationId } });
     await prisma.client.enrollmentStatusHistory.deleteMany({
       where: { enrollment: { organizationId } },
     });
@@ -97,6 +98,7 @@ describe("EnrollmentsService.createEnrollment", () => {
       studentId: studentAId,
       groupId,
       startDate: "2026-09-01",
+      annualFeeAmount: "500.00",
     });
     expect(enrollment.status).toBe("ACTIVE");
   });
@@ -107,6 +109,7 @@ describe("EnrollmentsService.createEnrollment", () => {
         studentId: studentBId,
         groupId,
         startDate: "2026-09-01",
+        annualFeeAmount: "500.00",
       }),
     ).rejects.toThrow();
   });
@@ -117,6 +120,7 @@ describe("EnrollmentsService.createEnrollment", () => {
         studentId: studentAId,
         groupId,
         startDate: "2026-09-01",
+        annualFeeAmount: "500.00",
       }),
     ).rejects.toThrow();
   });
@@ -189,6 +193,7 @@ describe("EnrollmentsService.createEnrollment concurrencia", () => {
   });
 
   afterAll(async () => {
+    await prisma.client.charge.deleteMany({ where: { organizationId } });
     await prisma.client.enrollmentStatusHistory.deleteMany({
       where: { enrollment: { organizationId } },
     });
@@ -212,11 +217,13 @@ describe("EnrollmentsService.createEnrollment concurrencia", () => {
         studentId: studentAId,
         groupId,
         startDate: "2026-09-01",
+        annualFeeAmount: "500.00",
       }),
       enrollmentsService.createEnrollment(organizationId, actorUserId, {
         studentId: studentBId,
         groupId,
         startDate: "2026-09-01",
+        annualFeeAmount: "500.00",
       }),
     ]);
 

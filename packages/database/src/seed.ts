@@ -17,6 +17,10 @@ import {
 
 const PILOT_ORGANIZATION_NAME = "Escuela Piloto VonverIA Swim";
 
+/** Montos sugeridos al inscribir; Direccion los ajusta en Configuracion. */
+const DEFAULT_ANNUAL_FEE = "800.00";
+const DEFAULT_ENROLLMENT_FEE = "300.00";
+
 const ROLE_DEFINITIONS: Array<{ key: RoleKey; name: string; capabilities: readonly string[] }> = [
   {
     key: RoleKey.DIRECCION,
@@ -67,13 +71,28 @@ async function seedPilotOrganization(prisma: PrismaClient) {
   const existing = await prisma.organization.findFirst({
     where: { name: PILOT_ORGANIZATION_NAME },
   });
-  if (existing) return existing;
+  if (existing) {
+    // Solo rellena los montos si nunca se han configurado: si Direccion ya los
+    // ajusto, el seed no debe pisarlos al volver a correr.
+    if (existing.defaultAnnualFee === null && existing.defaultEnrollmentFee === null) {
+      return prisma.organization.update({
+        where: { id: existing.id },
+        data: {
+          defaultAnnualFee: DEFAULT_ANNUAL_FEE,
+          defaultEnrollmentFee: DEFAULT_ENROLLMENT_FEE,
+        },
+      });
+    }
+    return existing;
+  }
 
   return prisma.organization.create({
     data: {
       name: PILOT_ORGANIZATION_NAME,
       timezone: DEFAULT_TIMEZONE,
       currency: DEFAULT_CURRENCY,
+      defaultAnnualFee: DEFAULT_ANNUAL_FEE,
+      defaultEnrollmentFee: DEFAULT_ENROLLMENT_FEE,
     },
   });
 }

@@ -11,6 +11,10 @@ export function OrganizationForm({ initial }: { initial: OrganizationData }) {
   const [name, setName] = useState(initial.name);
   const [timezone, setTimezone] = useState(initial.timezone);
   const [currency, setCurrency] = useState(initial.currency);
+  const [defaultAnnualFee, setDefaultAnnualFee] = useState(initial.defaultAnnualFee ?? "");
+  const [defaultEnrollmentFee, setDefaultEnrollmentFee] = useState(
+    initial.defaultEnrollmentFee ?? "",
+  );
   const [primaryColor, setPrimaryColor] = useState(initial.branding?.primaryColor ?? "#0B3C5D");
   const [accentColor, setAccentColor] = useState(initial.branding?.accentColor ?? "#1FB6A6");
   const [logoUrl, setLogoUrl] = useState(initial.branding?.logoUrl ?? "");
@@ -26,7 +30,13 @@ export function OrganizationForm({ initial }: { initial: OrganizationData }) {
     try {
       await apiFetch("/organization", {
         method: "PATCH",
-        body: JSON.stringify({ name, timezone, currency }),
+        body: JSON.stringify({
+          name,
+          timezone,
+          currency,
+          ...(defaultAnnualFee ? { defaultAnnualFee } : {}),
+          ...(defaultEnrollmentFee ? { defaultEnrollmentFee } : {}),
+        }),
       });
       await apiFetch("/organization/branding", {
         method: "PATCH",
@@ -78,6 +88,36 @@ export function OrganizationForm({ initial }: { initial: OrganizationData }) {
               className="rounded-md border border-border-subtle px-3 py-2 text-sm"
             />
           </label>
+        </div>
+
+        <div className="rounded-md border border-border-subtle p-3">
+          <p className="text-sm font-semibold text-text-primary">Montos de inscripcion</p>
+          <p className="mb-3 text-xs text-text-secondary">
+            Se proponen al inscribir y se pueden ajustar en el momento. Recepcion no tiene que
+            recordarlos de memoria.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="flex flex-col gap-1 text-sm text-text-primary">
+              Anualidad
+              <input
+                value={defaultAnnualFee}
+                onChange={(event) => setDefaultAnnualFee(event.target.value)}
+                inputMode="decimal"
+                placeholder="800.00"
+                className="rounded-md border border-border-subtle px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-text-primary">
+              Inscripcion
+              <input
+                value={defaultEnrollmentFee}
+                onChange={(event) => setDefaultEnrollmentFee(event.target.value)}
+                inputMode="decimal"
+                placeholder="300.00"
+                className="rounded-md border border-border-subtle px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

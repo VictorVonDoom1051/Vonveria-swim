@@ -1,6 +1,6 @@
 {
   "name": "vonveria-swim",
-  "version": "0.2.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Plataforma para administrar escuelas de natacion (VonverIA Swim)",
   "engines": {

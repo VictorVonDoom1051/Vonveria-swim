@@ -27,7 +27,11 @@ describe("Respaldo y restauracion de ida y vuelta", () => {
     await prisma.onModuleInit();
 
     const organization = await prisma.client.organization.create({
-      data: { name: `Org restauracion ${Date.now()}` },
+      data: {
+        name: `Org restauracion ${Date.now()}`,
+        defaultEnrollmentFee: "300.00",
+        defaultAnnualFee: "800.00",
+      },
     });
     organizationId = organization.id;
 
@@ -115,6 +119,7 @@ describe("Respaldo y restauracion de ida y vuelta", () => {
         billingModality: "MONTHLY",
         monthlyRateAmount: "1500.00",
         monthlyDueDay: 15,
+        annualFeeAmount: "800.00",
       },
     });
     const charge = await prisma.client.charge.create({
@@ -226,6 +231,16 @@ describe("Respaldo y restauracion de ida y vuelta", () => {
     });
     expect(organization).not.toBeNull();
     expect(organization?.branding?.primaryColor).toBe("#123456");
+    expect(organization?.defaultAnnualFee?.toString()).toBe("800");
+    expect(organization?.defaultEnrollmentFee?.toString()).toBe("300");
+  });
+
+  it("la inscripcion conserva su anualidad, que es lo que el worker renueva", async () => {
+    const enrollment = await prisma.client.enrollment.findFirst({ where: { organizationId } });
+    // Sin esto el alumno restaurado dejaba de pagar anualidad para siempre,
+    // en silencio: el respaldo se veia completo.
+    expect(enrollment?.annualFeeAmount?.toString()).toBe("800");
+    expect(enrollment?.monthlyRateAmount?.toString()).toBe("1500");
   });
 
   it("los alumnos y su familia vuelven con acentos intactos", async () => {

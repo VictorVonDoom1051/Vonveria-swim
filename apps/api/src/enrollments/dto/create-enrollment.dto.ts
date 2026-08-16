@@ -26,7 +26,14 @@ export class CreateEnrollmentDto {
   @IsEnum(BillingModality)
   billingModality?: BillingModality;
 
-  /** Cargo unico opcional al inscribir, independiente de la modalidad recurrente. */
+  /** Obligatoria: la escuela cobra anualidad en toda inscripcion. */
+  @IsDecimal({ decimal_digits: "0,2" })
+  annualFeeAmount!: string;
+
+  /**
+   * Cargo unico al inscribir. El servicio lo omite si el alumno ya pago
+   * inscripcion alguna vez, aunque venga en la peticion.
+   */
   @IsOptional()
   @IsDecimal({ decimal_digits: "0,2" })
   enrollmentFeeAmount?: string;

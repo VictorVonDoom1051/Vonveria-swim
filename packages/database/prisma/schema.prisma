@@ -39,6 +39,11 @@ model Organization {
   name      String
   timezone  String   @default("America/Mexico_City")
   currency  String   @default("MXN")
+  /// Montos por omision que el wizard de inscripcion prellena. Existen para que
+  /// "forzoso" sea confiable: teclear la anualidad de memoria en cada inscripcion
+  /// convierte un dedazo en un cargo equivocado.
+  defaultEnrollmentFee Decimal? @db.Decimal(10, 2) @map("default_enrollment_fee")
+  defaultAnnualFee     Decimal? @db.Decimal(10, 2) @map("default_annual_fee")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -438,6 +443,9 @@ model Enrollment {
   billingModality   BillingModality @default(NONE) @map("billing_modality")
   monthlyRateAmount Decimal?        @db.Decimal(10, 2) @map("monthly_rate_amount")
   monthlyDueDay     Int?            @map("monthly_due_day")
+  /// Monto vigente de la anualidad. El worker lo necesita para renovarla cada
+  /// aniversario de startDate.
+  annualFeeAmount   Decimal?        @db.Decimal(10, 2) @map("annual_fee_amount")
   createdAt      DateTime         @default(now()) @map("created_at")
   updatedAt      DateTime         @updatedAt @map("updated_at")
 
@@ -479,6 +487,7 @@ enum BillingModality {
 
 enum ChargeType {
   ENROLLMENT_FEE
+  ANNUAL_FEE
   MONTHLY_FEE
   PACKAGE
   SINGLE_CLASS

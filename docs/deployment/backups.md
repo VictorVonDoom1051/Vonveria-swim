@@ -87,7 +87,7 @@ restauró en una base limpia y se cotejaron los 3 alumnos, la Clase 9-10AM en
 Carril 1, el corte de $1,790 en efectivo y $260 en tarjeta, las existencias de la
 tienda y las 11 capacidades de Dirección.
 
-### Tres fallas que encontró esa prueba
+### Cuatro fallas que encontró esa prueba
 
 Vale la pena dejarlas escritas, porque ninguna se veía al exportar:
 
@@ -98,6 +98,12 @@ Vale la pena dejarlas escritas, porque ninguna se veía al exportar:
    respaldo y nunca entraron a la exportación.
 3. **Revertir una falta dejaba la nota pegada**, así que había registros que decían
    "Presente" con el motivo de una ausencia deshecha, y así salían impresos.
+4. **La anualidad se perdía al restaurar.** El importador enumera columnas una por
+   una, así que `annualFeeAmount` y los montos por omisión de la escuela se
+   descartaban en silencio: la escuela restaurada dejaba de cobrar anualidad para
+   siempre, y el archivo se veía completo. Es la lección que se repite: **exportar
+   sin volver a importar no prueba nada**, y cada campo nuevo hay que agregarlo
+   también al importador.
 
 Por eso `formatVersion` es 2. Un respaldo versión 1 ya no se puede importar: el
 comando se detiene en lugar de restaurar algo incompleto.

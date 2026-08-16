@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { getPrismaClient } from "@vonveria-swim/database";
 import { buildHeartbeatPayload } from "./heartbeat";
 import { runMonthlyFeeGeneration } from "./monthly-fees";
+import { runAnnualFeeGeneration } from "./annual-fees";
 
 // pnpm ejecuta este script con cwd=apps/worker, no la raiz del repo,
 // asi que el .env compartido no se carga solo. Se resuelve por ruta
@@ -36,6 +37,11 @@ async function runMonthlyFees(): Promise<void> {
   console.log(`[worker] mensualidades generadas: ${created}`);
 }
 
+async function runAnnualFees(): Promise<void> {
+  const created = await runAnnualFeeGeneration(prisma, new Date());
+  console.log(`[worker] anualidades generadas: ${created}`);
+}
+
 async function main(): Promise<void> {
   console.log(`[worker] iniciado, intervalo de heartbeat: ${intervalMs}ms`);
 
@@ -46,13 +52,20 @@ async function main(): Promise<void> {
     });
   }, intervalMs);
 
-  await runMonthlyFees().catch((error: unknown) => {
-    console.error("[worker] fallo al generar mensualidades", error);
-  });
-  const monthlyFeeTimer = setInterval(() => {
-    runMonthlyFees().catch((error: unknown) => {
+  // Mensualidades y anualidades comparten el ciclo diario: ambas solo necesitan
+  // revisarse una vez al dia y las dos son idempotentes por periodo.
+  const runRecurringFees = async (): Promise<void> => {
+    await runMonthlyFees().catch((error: unknown) => {
       console.error("[worker] fallo al generar mensualidades", error);
     });
+    await runAnnualFees().catch((error: unknown) => {
+      console.error("[worker] fallo al generar anualidades", error);
+    });
+  };
+
+  await runRecurringFees();
+  const monthlyFeeTimer = setInterval(() => {
+    void runRecurringFees();
   }, monthlyFeeIntervalMs);
 
   const shutdown = async (signal: string) => {

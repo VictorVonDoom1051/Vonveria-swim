@@ -2,6 +2,27 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo. El formato sigue [Keep a Changelog](https://keepachangelog.com/) y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [0.7.0] - 2026-08-16
+
+### Agregado
+
+- **Anualidad obligatoria al inscribir.** `ChargeType` gana `ANNUAL_FEE`; `Enrollment` gana `annualFeeAmount` y `Organization` gana `defaultAnnualFee` y `defaultEnrollmentFee`. Migracion `20260816162245_add_annual_fee`, puramente aditiva.
+  - La anualidad se guarda con `periodMonth = 0`. **No es un descuido:** en Postgres dos `NULL` no se consideran iguales, asi que con `periodMonth` nulo la restriccion unica `[enrollmentId, periodYear, periodMonth]` no impediria insertar dos anualidades del mismo año. El mes cero no existe en el calendario y no puede chocar con ninguna mensualidad real.
+  - **Es por alumno y por año, no por inscripcion.** Un alumno con dos grupos activos —lo que pasa hoy al cambiar de nivel, porque la inscripcion anterior no se cierra— la paga una sola vez. Se verifica explicitamente, porque la restriccion unica solo cubre por inscripcion.
+  - `apps/worker/src/annual-fees.ts` la renueva en cada aniversario de la fecha de inicio, no en enero. Corre en el mismo ciclo diario que las mensualidades.
+- **Asistente de inscripcion** (`/alumnos/inscripcion`, `students:manage`): familia → alumno → grupo → cobro → confirmacion. Un solo endpoint transaccional (`POST /enrollments/wizard`) crea familia, tutor, alumno e inscripcion: si el grupo se llena a la mitad, no queda una familia huerfana. La pantalla de confirmacion desglosa lo que se va a cobrar antes de apretar el boton.
+- **Montos por omision** en Configuracion → Organizacion, expuestos a Recepcion por `GET /enrollments/defaults`. Viven ahi y no en `/organization` porque Recepcion es quien inscribe y no administra la organizacion: sin esto, capturaria la anualidad de memoria en cada alta.
+
+### Cambiado
+
+- **La inscripcion se cobra una sola vez en la vida del alumno.** La regla se aplica en el backend revisando su historial completo de cargos: aunque la peticion traiga el monto, si ya la pago no se vuelve a generar. La interfaz solo lo refleja.
+- El formulario de inscripcion embebido en la ficha del alumno se reemplaza por un enlace al asistente, para no mantener dos caminos que hacen lo mismo. `/alumnos` gana "Nueva inscripcion" como accion primaria.
+- `createEnrollment` tambien exige anualidad: no queda ningun camino que la evada.
+
+### Corregido
+
+- **La exportacion de respaldo perdia los campos nuevos al restaurar.** `import.ts` enumera columnas una por una, asi que `annualFeeAmount` y los montos por omision se descartaban en silencio: la escuela restaurada dejaba de cobrar anualidad para siempre y el archivo se veia completo. Lo detecto la prueba de ida y vuelta, que ahora lo cubre.
+
 ## [0.6.0] - 2026-08-16
 
 ### Agregado

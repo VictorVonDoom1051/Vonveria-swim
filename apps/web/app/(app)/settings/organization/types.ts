@@ -3,6 +3,8 @@ export interface OrganizationData {
   name: string;
   timezone: string;
   currency: string;
+  defaultEnrollmentFee: string | null;
+  defaultAnnualFee: string | null;
   branding: {
     primaryColor: string;
     accentColor: string;

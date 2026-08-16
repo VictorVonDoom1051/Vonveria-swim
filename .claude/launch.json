@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "vonveria-swim-api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@vonveria-swim/api", "dev"],
+      "port": 3001
+    },
+    {
       "name": "vonveria-swim-web",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@vonveria-swim/web", "dev"],

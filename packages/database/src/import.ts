@@ -154,6 +154,8 @@ export async function importBackup(
           name: organization.name,
           timezone: organization.timezone,
           currency: organization.currency,
+          defaultEnrollmentFee: organization.defaultEnrollmentFee ?? null,
+          defaultAnnualFee: organization.defaultAnnualFee ?? null,
           createdAt: new Date(organization.createdAt),
         },
       });
@@ -348,6 +350,7 @@ export async function importBackup(
             billingModality: enrollment.billingModality,
             monthlyRateAmount: enrollment.monthlyRateAmount,
             monthlyDueDay: enrollment.monthlyDueDay,
+            annualFeeAmount: enrollment.annualFeeAmount ?? null,
           },
         });
         for (const history of enrollment.statusHistory ?? []) {
