@@ -76,6 +76,10 @@ export class AttendanceService {
       },
       update: {
         status: "PRESENT",
+        // Se limpia la nota: describia por que el alumno NO iba a ir, y al
+        // revertir ya no aplica. Sin esto quedan registros que dicen "Presente"
+        // con la nota "no hay quien lo lleve a clase", y asi salen impresos.
+        notes: null,
         actorUserId,
       },
     });
