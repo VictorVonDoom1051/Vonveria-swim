@@ -18,6 +18,9 @@ export const CAPABILITIES = {
   // M7: productos, inventario y venta de mostrador.
   SALES_MANAGE: "sales:manage",
   INVENTORY_MANAGE: "inventory:manage",
+  // Evaluaciones: primera capacidad que recibe el rol Instructor, coherente con
+  // la Seccion 4, que le asigna evaluar y proponer avance de nivel.
+  ASSESSMENTS_MANAGE: "assessments:manage",
 } as const;
 
 export type Capability = (typeof CAPABILITIES)[keyof typeof CAPABILITIES];
@@ -56,5 +59,9 @@ export const CAPABILITY_CATALOG: readonly CapabilityDefinition[] = [
   {
     key: CAPABILITIES.INVENTORY_MANAGE,
     description: "Administrar productos, precios y existencias",
+  },
+  {
+    key: CAPABILITIES.ASSESSMENTS_MANAGE,
+    description: "Registrar y consultar evaluaciones de alumnos",
   },
 ];

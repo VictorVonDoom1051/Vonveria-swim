@@ -11,7 +11,13 @@ import type { AuthenticatedUser } from "../identity/types";
 export class ProgramsController {
   constructor(@Inject(ProgramsService) private readonly programsService: ProgramsService) {}
 
-  @RequireCapability(CAPABILITIES.CATALOG_MANAGE, CAPABILITIES.SCHEDULING_MANAGE)
+  // El instructor tambien lo lee: para sugerir un nivel hay que poder ver la
+  // lista de niveles. Es solo lectura del catalogo.
+  @RequireCapability(
+    CAPABILITIES.CATALOG_MANAGE,
+    CAPABILITIES.SCHEDULING_MANAGE,
+    CAPABILITIES.ASSESSMENTS_MANAGE,
+  )
   @Get()
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.programsService.listPrograms(user.organizationId);

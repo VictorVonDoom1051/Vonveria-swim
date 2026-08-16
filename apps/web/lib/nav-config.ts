@@ -43,6 +43,11 @@ export const MORE_NAV: NavItem[] = [
     requiresAnyCapability: [CAPABILITIES.CATALOG_MANAGE],
   },
   {
+    label: "Respaldos",
+    href: "/settings/backup",
+    requiresAnyCapability: [CAPABILITIES.ORGANIZATION_MANAGE],
+  },
+  {
     label: "Configuracion",
     href: "/settings/organization",
     requiresAnyCapability: [

@@ -16,6 +16,9 @@ import { ReportsModule } from "./reports/reports.module";
 import { AttendanceModule } from "./attendance/attendance.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { BackupModule } from "./backup/backup.module";
+import { InstructorsModule } from "./instructors/instructors.module";
+import { AssessmentsModule } from "./assessments/assessments.module";
 import { AuthGuard } from "./identity/guards/auth.guard";
 import { CapabilityGuard } from "./identity/guards/capability.guard";
 import { CsrfMiddleware } from "./common/csrf.middleware";
@@ -40,6 +43,9 @@ import { CsrfMiddleware } from "./common/csrf.middleware";
     AttendanceModule,
     InventoryModule,
     DashboardModule,
+    BackupModule,
+    InstructorsModule,
+    AssessmentsModule,
   ],
   providers: [
     // Orden importa: AuthGuard resuelve request.user antes de que CapabilityGuard lo necesite.

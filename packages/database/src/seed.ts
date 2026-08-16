@@ -32,6 +32,7 @@ const ROLE_DEFINITIONS: Array<{ key: RoleKey; name: string; capabilities: readon
       CAPABILITIES.BILLING_ADJUST,
       CAPABILITIES.SALES_MANAGE,
       CAPABILITIES.INVENTORY_MANAGE,
+      CAPABILITIES.ASSESSMENTS_MANAGE,
     ],
   },
   {
@@ -45,7 +46,13 @@ const ROLE_DEFINITIONS: Array<{ key: RoleKey; name: string; capabilities: readon
       CAPABILITIES.SALES_MANAGE,
     ],
   },
-  { key: RoleKey.INSTRUCTOR, name: "Instructor", capabilities: [] },
+  // Primera capacidad del rol Instructor: la Seccion 4 le asigna evaluar y
+  // proponer avance de nivel.
+  {
+    key: RoleKey.INSTRUCTOR,
+    name: "Instructor",
+    capabilities: [CAPABILITIES.ASSESSMENTS_MANAGE],
+  },
 ];
 
 async function seedAppMetadata(prisma: PrismaClient): Promise<void> {

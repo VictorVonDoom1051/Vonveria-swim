@@ -61,6 +61,7 @@ model Organization {
 
   products Product[]
   sales    Sale[]
+  assessments Assessment[]
 
   @@map("organizations")
 }
@@ -97,6 +98,7 @@ model User {
   sessions       Session[]
   auditLogsAsActor AuditLog[] @relation("AuditLogActor")
   instructedGroups Group[]   @relation("GroupInstructor")
+  assessmentsAsEvaluator Assessment[] @relation("AssessmentEvaluator")
 
   @@unique([organizationId, email])
   @@map("users")
@@ -287,7 +289,8 @@ model Level {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  groups Group[]
+  groups      Group[]
+  assessments Assessment[]
 
   @@unique([programId, name])
   @@map("levels")
@@ -341,6 +344,7 @@ model Student {
   payments       Payment[]
   packageCredits PackageCredit[]
   attendances    Attendance[]
+  assessments    Assessment[]
 
   @@map("students")
 }
@@ -770,4 +774,31 @@ model SaleLine {
 
   @@index([saleId])
   @@map("sale_lines")
+}
+
+// ---------------------------------------------------------------------------
+// M5 (acotado) - Evaluaciones.
+//
+// El alumno no tiene nivel propio: lo hereda del grupo en el que esta inscrito.
+// Por eso suggestedLevel es una sugerencia registrada y no mueve a nadie: el
+// cambio de grupo se hace aparte, a mano, desde la ficha del alumno.
+// ---------------------------------------------------------------------------
+
+model Assessment {
+  id               String       @id @default(uuid())
+  organizationId   String       @map("organization_id")
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  studentId        String       @map("student_id")
+  student          Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  evaluatorUserId  String       @map("evaluator_user_id")
+  evaluator        User         @relation("AssessmentEvaluator", fields: [evaluatorUserId], references: [id])
+  assessedAt       DateTime     @default(now()) @map("assessed_at")
+  observation      String
+  suggestedLevelId String?      @map("suggested_level_id")
+  suggestedLevel   Level?       @relation(fields: [suggestedLevelId], references: [id])
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  @@index([organizationId, assessedAt])
+  @@index([studentId])
+  @@map("assessments")
 }

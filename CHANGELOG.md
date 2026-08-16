@@ -2,6 +2,20 @@
 
 Todos los cambios notables de este proyecto se documentan en este archivo. El formato sigue [Keep a Changelog](https://keepachangelog.com/) y el versionado sigue [SemVer](https://semver.org/lang/es/).
 
+## [0.6.0] - 2026-08-16
+
+### Agregado
+
+- **Panel de inicio con mapa de albercas.** `/inicio` deja de ser un texto placeholder: muestra cada alberca con sus carriles y lo que esta pasando en ellos ahora, los pagos vencidos, las faltas avisadas de hoy y accesos rapidos. Sin migracion: `Lane` y `Group.laneId` existian desde M2 sin usarse.
+- **Respaldos** (`/settings/backup`, solo Direccion): descarga de toda la escuela en un JSON y de cuatro listados en CSV (alumnos, pagos, asistencias, inventario) para abrir en Excel e imprimir. El respaldo **nunca** incluye `passwordHash`. Los CSV se emiten UTF-8 con BOM para que Excel respete los acentos. Documentado en `docs/deployment/backups.md`, incluyendo que la restauracion aun no se ha probado.
+- **Instructores** (`/instructores`): vista operativa con los grupos de cada instructor, horario agrupado por hora y cupo ocupado. Sin formularios: el alta sigue en Configuracion → Usuarios.
+- **Evaluaciones** (`/evaluaciones`): modelo `Assessment` con fecha, observacion y nivel sugerido. Un instructor solo ve y evalua a los alumnos inscritos en sus propios grupos; el filtro vive en el servicio, no en la interfaz.
+
+### Cambiado
+
+- **El rol Instructor recibe su primera capacidad**, `assessments:manage`, coherente con la Seccion 4 de `CLAUDE.md`, que le asigna evaluar y proponer avance de nivel. `GET /programs` la acepta tambien, porque para sugerir un nivel hay que poder leer el catalogo.
+- El seed refleja la escuela real: Alberca Grande con dos carriles y Alberca Chica para clases personalizadas. La alberca anterior se **renombra** conservando su id, para no dejar huerfanos los grupos que ya apuntaban a ella en produccion.
+
 ## [0.5.0] - 2026-08-15
 
 ### Agregado
