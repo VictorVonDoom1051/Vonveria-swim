@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button, Card, Modal, StatusBadge } from "@vonveria-swim/ui";
 import { apiFetch, ApiRequestError } from "../../../../lib/api-client";
 import type {
+  OpenSaleItem,
   CashClosingDetail,
   CashClosingItem,
   CashClosingOpenSummary,
@@ -76,6 +77,34 @@ function PaymentBreakdown({ payment }: { payment: OpenPaymentItem }) {
   );
 }
 
+function SaleBreakdown({ sale }: { sale: OpenSaleItem }) {
+  return (
+    <div className="rounded-md border border-border-subtle p-3 text-sm">
+      <div className="flex items-center justify-between">
+        <p className="font-medium text-text-primary">Venta de mostrador</p>
+        <p className="font-medium text-text-primary">{formatMoney(sale.total)}</p>
+      </div>
+      <p className="mb-2 text-text-secondary">
+        {METHOD_LABELS[sale.method] ?? sale.method} ·{" "}
+        {new Date(sale.soldAt).toLocaleString("es-MX")}
+      </p>
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-text-secondary">
+        Productos
+      </p>
+      <div className="flex flex-col gap-0.5">
+        {sale.lines.map((line) => (
+          <div key={line.id} className="flex items-center justify-between text-text-primary">
+            <span>
+              {line.product.name} × {line.quantity}
+            </span>
+            <span>{formatMoney(line.lineTotal)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function CashClosingView({
   initialClosings,
   initialOpenSummary,
@@ -89,6 +118,7 @@ export function CashClosingView({
   const [closing, setClosing] = useState(false);
   const [detailTitle, setDetailTitle] = useState<string | null>(null);
   const [detailPayments, setDetailPayments] = useState<OpenPaymentItem[]>([]);
+  const [detailSales, setDetailSales] = useState<OpenSaleItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const openTotal =
@@ -125,6 +155,13 @@ export function CashClosingView({
   function openPaymentDetail(payment: OpenPaymentItem): void {
     setDetailTitle("Detalle del pago");
     setDetailPayments([payment]);
+    setDetailSales([]);
+  }
+
+  function openSaleDetail(sale: OpenSaleItem): void {
+    setDetailTitle("Detalle de la venta");
+    setDetailPayments([]);
+    setDetailSales([sale]);
   }
 
   async function openClosingDetail(closing_: CashClosingItem): Promise<void> {
@@ -133,11 +170,13 @@ export function CashClosingView({
       `Corte ${new Date(closing_.openedAt).toLocaleString("es-MX")} — ${new Date(closing_.closedAt).toLocaleString("es-MX")}`,
     );
     setDetailPayments([]);
+    setDetailSales([]);
     try {
       const detail = await apiFetch<CashClosingDetail>(
         `/billing/cash-closings/${closing_.id}/detail`,
       );
       setDetailPayments(detail.payments);
+      setDetailSales(detail.sales);
     } finally {
       setDetailLoading(false);
     }
@@ -259,7 +298,17 @@ export function CashClosingView({
                           {new Date(sale.soldAt).toLocaleString("es-MX")}
                         </p>
                       </div>
-                      <p className="font-medium text-text-primary">{formatMoney(sale.total)}</p>
+                      <div className="flex items-center gap-3">
+                        <p className="font-medium text-text-primary">{formatMoney(sale.total)}</p>
+                        <button
+                          type="button"
+                          onClick={() => openSaleDetail(sale)}
+                          aria-label="Ver detalle de la venta"
+                          className="rounded-md p-1 text-text-secondary hover:bg-bg-base hover:text-brand-deep"
+                        >
+                          <DetailIcon />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </>
@@ -329,6 +378,12 @@ export function CashClosingView({
             {detailPayments.map((payment) => (
               <PaymentBreakdown key={payment.id} payment={payment} />
             ))}
+            {detailSales.map((sale) => (
+              <SaleBreakdown key={sale.id} sale={sale} />
+            ))}
+            {detailPayments.length === 0 && detailSales.length === 0 ? (
+              <p className="text-sm text-text-secondary">Este corte no tiene movimientos.</p>
+            ) : null}
           </div>
         )}
       </Modal>
